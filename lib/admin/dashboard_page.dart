@@ -5,6 +5,10 @@ import '../services/auth_service.dart';
 
 import 'profil/profil_admin_page.dart';
 import 'struktur/struktur_admin_page.dart';
+import 'produk/produk_admin_page.dart';
+import 'berita/berita_admin_page.dart';
+import 'galeri/galeri_admin_page.dart';
+import 'pengaturan/pengaturan_admin_page.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
@@ -143,23 +147,18 @@ class DashboardPage extends StatelessWidget {
                         // =========================
                         // PRODUK DESA
                         // =========================
-                        _MenuCard(
-                          icon:
-                              Icons.storefront_outlined,
+                       _MenuCard(
+                          icon: Icons.storefront_outlined,
                           title: 'Produk Desa',
-                          subtitle:
-                              'Kelola produk unggulan',
+                          subtitle: 'Kelola produk unggulan',
                           onTap: () {
-                            ScaffoldMessenger.of(context)
-                                .showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Menu Produk Desa akan kita buat berikutnya.',
-                                ),
-                              ),
-                            );
-                          },
-                        ),
+                            Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const ProdukAdminPage(),
+                            ),
+                          );
+                        },
+                      ),
 
                         // =========================
                         // BERITA
@@ -167,15 +166,11 @@ class DashboardPage extends StatelessWidget {
                         _MenuCard(
                           icon: Icons.article_outlined,
                           title: 'Berita',
-                          subtitle:
-                              'Kelola berita desa',
+                          subtitle: 'Kelola berita desa',
                           onTap: () {
-                            ScaffoldMessenger.of(context)
-                                .showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Menu Berita akan kita buat berikutnya.',
-                                ),
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const BeritaAdminPage(),
                               ),
                             );
                           },
@@ -185,18 +180,13 @@ class DashboardPage extends StatelessWidget {
                         // GALERI
                         // =========================
                         _MenuCard(
-                          icon:
-                              Icons.photo_library_outlined,
+                          icon: Icons.photo_library_outlined,
                           title: 'Galeri',
-                          subtitle:
-                              'Kelola foto kegiatan',
+                          subtitle: 'Kelola galeri desa',
                           onTap: () {
-                            ScaffoldMessenger.of(context)
-                                .showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Menu Galeri akan kita buat berikutnya.',
-                                ),
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const GaleriAdminPage(),
                               ),
                             );
                           },
@@ -208,15 +198,11 @@ class DashboardPage extends StatelessWidget {
                         _MenuCard(
                           icon: Icons.settings_outlined,
                           title: 'Pengaturan',
-                          subtitle:
-                              'Pengaturan website',
+                          subtitle: 'Kelola pengaturan website',
                           onTap: () {
-                            ScaffoldMessenger.of(context)
-                                .showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Menu Pengaturan akan kita buat berikutnya.',
-                                ),
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const PengaturanAdminPage(),
                               ),
                             );
                           },
