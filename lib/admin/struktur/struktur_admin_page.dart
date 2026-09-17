@@ -16,12 +16,17 @@ class StrukturAdminPage extends StatefulWidget {
       _StrukturAdminPageState();
 }
 
-class _StrukturAdminPageState extends State<StrukturAdminPage> {
+class _StrukturAdminPageState
+    extends State<StrukturAdminPage> {
   final PerangkatService _perangkatService =
       PerangkatService();
 
   final StorageService _storageService =
       StorageService();
+
+  // ============================================================
+  // TAMBAH
+  // ============================================================
 
   Future<void> _tambah() async {
     await showDialog(
@@ -33,7 +38,13 @@ class _StrukturAdminPageState extends State<StrukturAdminPage> {
     );
   }
 
-  Future<void> _edit(Perangkat perangkat) async {
+  // ============================================================
+  // EDIT
+  // ============================================================
+
+  Future<void> _edit(
+    Perangkat perangkat,
+  ) async {
     await showDialog(
       context: context,
       builder: (_) => _FormPerangkat(
@@ -44,8 +55,15 @@ class _StrukturAdminPageState extends State<StrukturAdminPage> {
     );
   }
 
-  Future<void> _hapus(Perangkat perangkat) async {
-    final yakin = await showDialog<bool>(
+  // ============================================================
+  // HAPUS
+  // ============================================================
+
+  Future<void> _hapus(
+    Perangkat perangkat,
+  ) async {
+    final yakin =
+        await showDialog<bool>(
       context: context,
       builder: (context) {
         return AlertDialog(
@@ -57,17 +75,24 @@ class _StrukturAdminPageState extends State<StrukturAdminPage> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.pop(context, false);
+                Navigator.pop(
+                  context,
+                  false,
+                );
               },
               child: const Text('Batal'),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(
+              style:
+                  ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
               ),
               onPressed: () {
-                Navigator.pop(context, true);
+                Navigator.pop(
+                  context,
+                  true,
+                );
               },
               child: const Text('Hapus'),
             ),
@@ -79,7 +104,8 @@ class _StrukturAdminPageState extends State<StrukturAdminPage> {
     if (yakin != true) return;
 
     try {
-      await _perangkatService.hapusPerangkat(
+      await _perangkatService
+          .hapusPerangkat(
         perangkat.id,
       );
 
@@ -91,15 +117,19 @@ class _StrukturAdminPageState extends State<StrukturAdminPage> {
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
         const SnackBar(
-          content: Text('Data berhasil dihapus.'),
+          content: Text(
+            'Data berhasil dihapus.',
+          ),
         ),
       );
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
         SnackBar(
           content: Text(
             'Gagal menghapus data: $e',
@@ -109,38 +139,54 @@ class _StrukturAdminPageState extends State<StrukturAdminPage> {
     }
   }
 
+  // ============================================================
+  // BUILD
+  // ============================================================
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+  ) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Struktur Desa'),
+        title: const Text(
+          'Struktur Desa',
+        ),
       ),
       body: StreamBuilder<List<Perangkat>>(
-        stream: _perangkatService.getPerangkat(),
-        builder: (context, snapshot) {
+        stream:
+            _perangkatService.getPerangkat(),
+        builder:
+            (context, snapshot) {
           if (snapshot.connectionState ==
               ConnectionState.waiting) {
             return const Center(
-              child: CircularProgressIndicator(),
+              child:
+                  CircularProgressIndicator(),
             );
           }
 
           if (snapshot.hasError) {
             return Center(
               child: Text(
-                'Terjadi kesalahan:\n${snapshot.error}',
-                textAlign: TextAlign.center,
+                'Terjadi kesalahan:\n'
+                '${snapshot.error}',
+                textAlign:
+                    TextAlign.center,
               ),
             );
           }
 
-          final data = snapshot.data ?? [];
+          final data =
+              snapshot.data ?? [];
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding:
+                const EdgeInsets.all(24),
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(
+                constraints:
+                    const BoxConstraints(
                   maxWidth: 1100,
                 ),
                 child: Column(
@@ -149,70 +195,93 @@ class _StrukturAdminPageState extends State<StrukturAdminPage> {
                   children: [
                     Row(
                       mainAxisAlignment:
-                          MainAxisAlignment.spaceBetween,
+                          MainAxisAlignment
+                              .spaceBetween,
                       children: [
                         const Column(
                           crossAxisAlignment:
-                              CrossAxisAlignment.start,
+                              CrossAxisAlignment
+                                  .start,
                           children: [
                             Text(
                               'Struktur Pemerintahan Desa',
                               style: TextStyle(
                                 fontSize: 26,
-                                fontWeight: FontWeight.bold,
+                                fontWeight:
+                                    FontWeight.bold,
                               ),
                             ),
                             SizedBox(height: 6),
                             Text(
                               'Kelola data perangkat desa.',
                               style: TextStyle(
-                                color: Colors.grey,
+                                color:
+                                    Colors.grey,
                               ),
                             ),
                           ],
                         ),
                         ElevatedButton.icon(
                           onPressed: _tambah,
-                          icon: const Icon(Icons.add),
-                          label: const Text(
+                          icon:
+                              const Icon(
+                            Icons.add,
+                          ),
+                          label:
+                              const Text(
                             'Tambah Perangkat',
                           ),
                         ),
                       ],
                     ),
 
-                    const SizedBox(height: 28),
+                    const SizedBox(
+                      height: 28,
+                    ),
 
                     if (data.isEmpty)
                       _Kosong()
                     else
                       LayoutBuilder(
-                        builder:
-                            (context, constraints) {
+                        builder: (
+                          context,
+                          constraints,
+                        ) {
                           int kolom = 1;
 
-                          if (constraints.maxWidth >=
+                          if (constraints
+                                  .maxWidth >=
                               900) {
                             kolom = 3;
-                          } else if (constraints.maxWidth >=
+                          } else if (constraints
+                                  .maxWidth >=
                               600) {
                             kolom = 2;
                           }
 
-                          return GridView.builder(
+                          return GridView
+                              .builder(
                             shrinkWrap: true,
                             physics:
                                 const NeverScrollableScrollPhysics(),
-                            itemCount: data.length,
+                            itemCount:
+                                data.length,
                             gridDelegate:
                                 SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: kolom,
-                              crossAxisSpacing: 20,
-                              mainAxisSpacing: 20,
-                              childAspectRatio: 0.72,
+                              crossAxisCount:
+                                  kolom,
+                              crossAxisSpacing:
+                                  20,
+                              mainAxisSpacing:
+                                  20,
+                              childAspectRatio:
+                                  0.72,
                             ),
                             itemBuilder:
-                                (context, index) {
+                                (
+                              context,
+                              index,
+                            ) {
                               final perangkat =
                                   data[index];
 
@@ -220,9 +289,13 @@ class _StrukturAdminPageState extends State<StrukturAdminPage> {
                                 perangkat:
                                     perangkat,
                                 onEdit: () =>
-                                    _edit(perangkat),
+                                    _edit(
+                                  perangkat,
+                                ),
                                 onDelete: () =>
-                                    _hapus(perangkat),
+                                    _hapus(
+                                  perangkat,
+                                ),
                               );
                             },
                           );
@@ -239,15 +312,24 @@ class _StrukturAdminPageState extends State<StrukturAdminPage> {
   }
 }
 
-class _Kosong extends StatelessWidget {
+// ================================================================
+// DATA KOSONG
+// ================================================================
+
+class _Kosong
+    extends StatelessWidget {
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+  ) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(50),
+      padding:
+          const EdgeInsets.all(50),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius:
+            BorderRadius.circular(16),
       ),
       child: const Column(
         children: [
@@ -269,7 +351,12 @@ class _Kosong extends StatelessWidget {
   }
 }
 
-class _KartuPerangkat extends StatelessWidget {
+// ================================================================
+// KARTU PERANGKAT
+// ================================================================
+
+class _KartuPerangkat
+    extends StatelessWidget {
   final Perangkat perangkat;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
@@ -281,9 +368,12 @@ class _KartuPerangkat extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+  ) {
     return Card(
-      clipBehavior: Clip.antiAlias,
+      clipBehavior:
+          Clip.antiAlias,
       elevation: 2,
       child: Column(
         children: [
@@ -291,23 +381,34 @@ class _KartuPerangkat extends StatelessWidget {
             flex: 5,
             child: Container(
               width: double.infinity,
-              color: AppTheme.lightGreen,
-              child: perangkat.fotoUrl.isEmpty
+              color:
+                  AppTheme.lightGreen,
+              child: perangkat
+                      .fotoUrl
+                      .isEmpty
                   ? const Icon(
                       Icons.person,
                       size: 80,
-                      color: AppTheme.primary,
+                      color:
+                          AppTheme.primary,
                     )
                   : Image.network(
                       perangkat.fotoUrl,
-                      width: double.infinity,
+                      width:
+                          double.infinity,
                       fit: BoxFit.cover,
                       errorBuilder:
-                          (context, error, stackTrace) {
+                          (
+                        context,
+                        error,
+                        stackTrace,
+                      ) {
                         return const Icon(
-                          Icons.broken_image,
+                          Icons
+                              .broken_image,
                           size: 60,
-                          color: Colors.grey,
+                          color:
+                              Colors.grey,
                         );
                       },
                     ),
@@ -317,43 +418,66 @@ class _KartuPerangkat extends StatelessWidget {
           Expanded(
             flex: 4,
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding:
+                  const EdgeInsets.all(
+                16,
+              ),
               child: Column(
                 crossAxisAlignment:
-                    CrossAxisAlignment.start,
+                    CrossAxisAlignment
+                        .start,
                 children: [
                   Text(
                     perangkat.nama,
                     maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    overflow:
+                        TextOverflow
+                            .ellipsis,
+                    style:
+                        const TextStyle(
                       fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                      fontWeight:
+                          FontWeight.bold,
                     ),
                   ),
 
-                  const SizedBox(height: 6),
+                  const SizedBox(
+                    height: 6,
+                  ),
 
                   Text(
                     perangkat.jabatan,
                     maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppTheme.primary,
-                      fontWeight: FontWeight.w600,
+                    overflow:
+                        TextOverflow
+                            .ellipsis,
+                    style:
+                        const TextStyle(
+                      color:
+                          AppTheme.primary,
+                      fontWeight:
+                          FontWeight.w600,
                     ),
                   ),
 
-                  if (perangkat.keterangan
+                  if (perangkat
+                      .keterangan
                       .trim()
                       .isNotEmpty) ...[
-                    const SizedBox(height: 8),
+                    const SizedBox(
+                      height: 8,
+                    ),
                     Text(
-                      perangkat.keterangan,
+                      perangkat
+                          .keterangan,
                       maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.grey,
+                      overflow:
+                          TextOverflow
+                              .ellipsis,
+                      style:
+                          const TextStyle(
+                        color:
+                            Colors.grey,
                       ),
                     ),
                   ],
@@ -363,22 +487,36 @@ class _KartuPerangkat extends StatelessWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: onEdit,
-                          icon: const Icon(
+                        child:
+                            OutlinedButton
+                                .icon(
+                          onPressed:
+                              onEdit,
+                          icon:
+                              const Icon(
                             Icons.edit,
                             size: 18,
                           ),
-                          label: const Text('Edit'),
+                          label:
+                              const Text(
+                            'Edit',
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(
+                        width: 8,
+                      ),
                       IconButton(
-                        onPressed: onDelete,
-                        color: Colors.red,
-                        tooltip: 'Hapus',
-                        icon: const Icon(
-                          Icons.delete_outline,
+                        onPressed:
+                            onDelete,
+                        color:
+                            Colors.red,
+                        tooltip:
+                            'Hapus',
+                        icon:
+                            const Icon(
+                          Icons
+                              .delete_outline,
                         ),
                       ),
                     ],
@@ -393,7 +531,12 @@ class _KartuPerangkat extends StatelessWidget {
   }
 }
 
-class _FormPerangkat extends StatefulWidget {
+// ================================================================
+// FORM PERANGKAT
+// ================================================================
+
+class _FormPerangkat
+    extends StatefulWidget {
   final Perangkat? perangkat;
   final PerangkatService perangkatService;
   final StorageService storageService;
@@ -411,12 +554,20 @@ class _FormPerangkat extends StatefulWidget {
 
 class _FormPerangkatState
     extends State<_FormPerangkat> {
-  final _formKey = GlobalKey<FormState>();
+  final _formKey =
+      GlobalKey<FormState>();
 
-  late TextEditingController _namaController;
-  late TextEditingController _jabatanController;
-  late TextEditingController _keteranganController;
-  late TextEditingController _urutanController;
+  late TextEditingController
+      _namaController;
+
+  late TextEditingController
+      _jabatanController;
+
+  late TextEditingController
+      _keteranganController;
+
+  late TextEditingController
+      _urutanController;
 
   Uint8List? _fotoBaru;
   String? _namaFile;
@@ -425,29 +576,38 @@ class _FormPerangkatState
 
   bool _loading = false;
 
+  // Progress 0 - 1
+  double _uploadProgress = 0;
+
   @override
   void initState() {
     super.initState();
 
-    final data = widget.perangkat;
+    final data =
+        widget.perangkat;
 
-    _namaController = TextEditingController(
+    _namaController =
+        TextEditingController(
       text: data?.nama ?? '',
     );
 
-    _jabatanController = TextEditingController(
+    _jabatanController =
+        TextEditingController(
       text: data?.jabatan ?? '',
     );
 
-    _keteranganController = TextEditingController(
+    _keteranganController =
+        TextEditingController(
       text: data?.keterangan ?? '',
     );
 
-    _urutanController = TextEditingController(
+    _urutanController =
+        TextEditingController(
       text: '1',
     );
 
-    _fotoLama = data?.fotoUrl ?? '';
+    _fotoLama =
+        data?.fotoUrl ?? '';
   }
 
   @override
@@ -460,10 +620,15 @@ class _FormPerangkatState
     super.dispose();
   }
 
+  // ============================================================
+  // PILIH FOTO
+  // ============================================================
+
   Future<void> _pilihFoto() async {
     try {
       final result =
-          await FilePicker.platform.pickFiles(
+          await FilePicker.platform
+              .pickFiles(
         type: FileType.image,
         withData: true,
       );
@@ -472,7 +637,8 @@ class _FormPerangkatState
         return;
       }
 
-      final file = result.files.first;
+      final file =
+          result.files.first;
 
       if (file.bytes == null) {
         _pesan(
@@ -481,9 +647,25 @@ class _FormPerangkatState
         return;
       }
 
+      // Batas ukuran foto asli.
+      // 10 MB cukup untuk foto perangkat.
+      const maxSize =
+          10 * 1024 * 1024;
+
+      if (file.bytes!.length >
+          maxSize) {
+        _pesan(
+          'Ukuran foto terlalu besar. '
+          'Maksimal 10 MB.',
+        );
+        return;
+      }
+
       setState(() {
-        _fotoBaru = file.bytes;
-        _namaFile = file.name;
+        _fotoBaru =
+            file.bytes;
+        _namaFile =
+            file.name;
       });
     } catch (e) {
       _pesan(
@@ -492,19 +674,40 @@ class _FormPerangkatState
     }
   }
 
+  // ============================================================
+  // UPLOAD FOTO
+  // ============================================================
+
   Future<String> _uploadFoto() async {
+    // Tidak memilih foto baru.
     if (_fotoBaru == null) {
       return _fotoLama;
     }
 
     final url =
-        await widget.storageService.uploadPerangkatFoto(
+        await widget.storageService
+            .uploadPerangkatFoto(
       bytes: _fotoBaru!,
-      fileName: _namaFile ?? 'foto.jpg',
+      fileName:
+          _namaFile ?? 'foto.jpg',
+
+      // Progress upload
+      onProgress:
+          (progress) {
+        if (!mounted) return;
+
+        setState(() {
+          _uploadProgress =
+              progress;
+        });
+      },
     );
 
+    // Hapus foto lama SETELAH
+    // foto baru berhasil diupload.
     if (_fotoLama.isNotEmpty) {
-      await widget.storageService.hapusFoto(
+      await widget.storageService
+          .hapusFoto(
         _fotoLama,
       );
     }
@@ -512,45 +715,89 @@ class _FormPerangkatState
     return url;
   }
 
+  // ============================================================
+  // SIMPAN
+  // ============================================================
+
   Future<void> _simpan() async {
-    if (!_formKey.currentState!.validate()) {
+    if (!_formKey.currentState!
+        .validate()) {
       return;
     }
 
     setState(() {
       _loading = true;
+      _uploadProgress = 0;
     });
 
     try {
-      final fotoUrl = await _uploadFoto();
+      // --------------------------------------------------------
+      // Upload foto
+      // --------------------------------------------------------
+
+      final fotoUrl =
+          await _uploadFoto();
+
+      // --------------------------------------------------------
+      // Urutan
+      // --------------------------------------------------------
 
       final urutan =
           int.tryParse(
-                _urutanController.text.trim(),
+                _urutanController
+                    .text
+                    .trim(),
               ) ??
               1;
 
-      if (widget.perangkat == null) {
-        await widget.perangkatService
+      // --------------------------------------------------------
+      // Tambah data
+      // --------------------------------------------------------
+
+      if (widget.perangkat ==
+          null) {
+        await widget
+            .perangkatService
             .tambahPerangkat(
-          nama: _namaController.text.trim(),
+          nama: _namaController
+              .text
+              .trim(),
           jabatan:
-              _jabatanController.text.trim(),
+              _jabatanController
+                  .text
+                  .trim(),
           fotoUrl: fotoUrl,
           keterangan:
-              _keteranganController.text.trim(),
+              _keteranganController
+                  .text
+                  .trim(),
           urutan: urutan,
         );
-      } else {
-        await widget.perangkatService
+      }
+
+      // --------------------------------------------------------
+      // Update data
+      // --------------------------------------------------------
+
+      else {
+        await widget
+            .perangkatService
             .updatePerangkat(
-          id: widget.perangkat!.id,
-          nama: _namaController.text.trim(),
+          id: widget
+              .perangkat!
+              .id,
+          nama: _namaController
+              .text
+              .trim(),
           jabatan:
-              _jabatanController.text.trim(),
+              _jabatanController
+                  .text
+                  .trim(),
           fotoUrl: fotoUrl,
           keterangan:
-              _keteranganController.text.trim(),
+              _keteranganController
+                  .text
+                  .trim(),
           urutan: urutan,
         );
       }
@@ -559,10 +806,13 @@ class _FormPerangkatState
 
       Navigator.pop(context);
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(
         SnackBar(
           content: Text(
-            widget.perangkat == null
+            widget.perangkat ==
+                    null
                 ? 'Data berhasil ditambahkan.'
                 : 'Data berhasil diperbarui.',
           ),
@@ -583,17 +833,34 @@ class _FormPerangkatState
     }
   }
 
-  void _pesan(String text) {
-    ScaffoldMessenger.of(context).showSnackBar(
+  // ============================================================
+  // PESAN
+  // ============================================================
+
+  void _pesan(
+    String text,
+  ) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(
       SnackBar(
-        content: Text(text),
+        content:
+            Text(text),
       ),
     );
   }
 
+  // ============================================================
+  // BUILD FORM
+  // ============================================================
+
   @override
-  Widget build(BuildContext context) {
-    final edit = widget.perangkat != null;
+  Widget build(
+    BuildContext context,
+  ) {
+    final edit =
+        widget.perangkat !=
+            null;
 
     return AlertDialog(
       title: Text(
@@ -604,60 +871,142 @@ class _FormPerangkatState
 
       content: SizedBox(
         width: 500,
-        child: SingleChildScrollView(
+        child:
+            SingleChildScrollView(
           child: Form(
             key: _formKey,
             child: Column(
               children: [
                 _PreviewFoto(
-                  fotoBaru: _fotoBaru,
-                  fotoLama: _fotoLama,
+                  fotoBaru:
+                      _fotoBaru,
+                  fotoLama:
+                      _fotoLama,
                 ),
 
-                const SizedBox(height: 14),
+                const SizedBox(
+                  height: 14,
+                ),
+
+                // ------------------------------------------------
+                // PILIH FOTO
+                // ------------------------------------------------
 
                 SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
+                  width:
+                      double.infinity,
+                  child:
+                      ElevatedButton
+                          .icon(
                     onPressed:
-                        _loading ? null : _pilihFoto,
-                    icon: const Icon(
-                      Icons.photo_library,
+                        _loading
+                            ? null
+                            : _pilihFoto,
+                    icon:
+                        const Icon(
+                      Icons
+                          .photo_library,
                     ),
-                    label: Text(
-                      _fotoBaru == null
+                    label:
+                        Text(
+                      _fotoBaru ==
+                              null
                           ? 'Pilih Foto dari Perangkat'
                           : 'Ganti Foto',
                     ),
                   ),
                 ),
 
-                if (_namaFile != null) ...[
-                  const SizedBox(height: 8),
+                if (_namaFile !=
+                    null) ...[
+                  const SizedBox(
+                    height: 8,
+                  ),
                   Text(
                     _namaFile!,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.grey,
+                    textAlign:
+                        TextAlign
+                            .center,
+                    style:
+                        const TextStyle(
+                      color:
+                          Colors.grey,
                     ),
                   ),
                 ],
 
-                const SizedBox(height: 24),
+                const SizedBox(
+                  height: 20,
+                ),
+
+                // ------------------------------------------------
+                // PROGRESS UPLOAD
+                // ------------------------------------------------
+
+                if (_loading &&
+                    _fotoBaru !=
+                        null) ...[
+                  Column(
+                    children: [
+                      LinearProgressIndicator(
+                        value:
+                            _uploadProgress >
+                                    0
+                                ? _uploadProgress
+                                : null,
+                      ),
+
+                      const SizedBox(
+                        height: 8,
+                      ),
+
+                      Text(
+                        _uploadProgress >
+                                0
+                            ? 'Mengupload foto '
+                                '${(_uploadProgress * 100).toStringAsFixed(0)}%'
+                            : 'Menyiapkan foto...',
+                        style:
+                            const TextStyle(
+                          fontSize:
+                              13,
+                          color:
+                              Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(
+                    height: 20,
+                  ),
+                ],
+
+                // ------------------------------------------------
+                // NAMA
+                // ------------------------------------------------
 
                 TextFormField(
-                  controller: _namaController,
+                  controller:
+                      _namaController,
+                  enabled:
+                      !_loading,
                   decoration:
                       const InputDecoration(
-                    labelText: 'Nama',
+                    labelText:
+                        'Nama',
                     hintText:
                         'Contoh: Budi Santoso',
                     border:
                         OutlineInputBorder(),
                   ),
-                  validator: (value) {
-                    if (value == null ||
-                        value.trim().isEmpty) {
+                  validator:
+                      (value) {
+                    if (value ==
+                            null ||
+                        value
+                            .trim()
+                            .isEmpty) {
                       return 'Nama wajib diisi.';
                     }
 
@@ -665,22 +1014,35 @@ class _FormPerangkatState
                   },
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(
+                  height: 16,
+                ),
+
+                // ------------------------------------------------
+                // JABATAN
+                // ------------------------------------------------
 
                 TextFormField(
                   controller:
                       _jabatanController,
+                  enabled:
+                      !_loading,
                   decoration:
                       const InputDecoration(
-                    labelText: 'Jabatan',
+                    labelText:
+                        'Jabatan',
                     hintText:
                         'Contoh: Kepala Desa',
                     border:
                         OutlineInputBorder(),
                   ),
-                  validator: (value) {
-                    if (value == null ||
-                        value.trim().isEmpty) {
+                  validator:
+                      (value) {
+                    if (value ==
+                            null ||
+                        value
+                            .trim()
+                            .isEmpty) {
                       return 'Jabatan wajib diisi.';
                     }
 
@@ -688,15 +1050,24 @@ class _FormPerangkatState
                   },
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(
+                  height: 16,
+                ),
+
+                // ------------------------------------------------
+                // KETERANGAN
+                // ------------------------------------------------
 
                 TextFormField(
                   controller:
                       _keteranganController,
+                  enabled:
+                      !_loading,
                   maxLines: 3,
                   decoration:
                       const InputDecoration(
-                    labelText: 'Keterangan',
+                    labelText:
+                        'Keterangan',
                     hintText:
                         'Keterangan tambahan',
                     border:
@@ -704,17 +1075,28 @@ class _FormPerangkatState
                   ),
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(
+                  height: 16,
+                ),
+
+                // ------------------------------------------------
+                // URUTAN
+                // ------------------------------------------------
 
                 TextFormField(
                   controller:
                       _urutanController,
+                  enabled:
+                      !_loading,
                   keyboardType:
-                      TextInputType.number,
+                      TextInputType
+                          .number,
                   decoration:
                       const InputDecoration(
-                    labelText: 'Urutan',
-                    hintText: 'Contoh: 1',
+                    labelText:
+                        'Urutan',
+                    hintText:
+                        'Contoh: 1',
                     border:
                         OutlineInputBorder(),
                   ),
@@ -725,17 +1107,30 @@ class _FormPerangkatState
         ),
       ),
 
+      // ==========================================================
+      // BUTTON
+      // ==========================================================
+
       actions: [
         TextButton(
-          onPressed: _loading
-              ? null
-              : () => Navigator.pop(context),
-          child: const Text('Batal'),
+          onPressed:
+              _loading
+                  ? null
+                  : () =>
+                      Navigator.pop(
+                    context,
+                  ),
+          child:
+              const Text(
+            'Batal',
+          ),
         ),
 
         ElevatedButton.icon(
           onPressed:
-              _loading ? null : _simpan,
+              _loading
+                  ? null
+                  : _simpan,
           icon: _loading
               ? const SizedBox(
                   width: 18,
@@ -743,10 +1138,13 @@ class _FormPerangkatState
                   child:
                       CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: Colors.white,
+                    color:
+                        Colors.white,
                   ),
                 )
-              : const Icon(Icons.save),
+              : const Icon(
+                  Icons.save,
+                ),
           label: Text(
             _loading
                 ? 'Mengupload...'
@@ -758,7 +1156,12 @@ class _FormPerangkatState
   }
 }
 
-class _PreviewFoto extends StatelessWidget {
+// ================================================================
+// PREVIEW FOTO
+// ================================================================
+
+class _PreviewFoto
+    extends StatelessWidget {
   final Uint8List? fotoBaru;
   final String fotoLama;
 
@@ -768,24 +1171,34 @@ class _PreviewFoto extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+  ) {
     Widget isi;
 
     if (fotoBaru != null) {
       isi = Image.memory(
         fotoBaru!,
-        width: double.infinity,
-        height: double.infinity,
+        width:
+            double.infinity,
+        height:
+            double.infinity,
         fit: BoxFit.cover,
       );
     } else if (fotoLama.isNotEmpty) {
       isi = Image.network(
         fotoLama,
-        width: double.infinity,
-        height: double.infinity,
+        width:
+            double.infinity,
+        height:
+            double.infinity,
         fit: BoxFit.cover,
         errorBuilder:
-            (context, error, stackTrace) {
+            (
+          context,
+          error,
+          stackTrace,
+        ) {
           return const Icon(
             Icons.broken_image,
             size: 60,
@@ -796,18 +1209,24 @@ class _PreviewFoto extends StatelessWidget {
       isi = const Icon(
         Icons.person,
         size: 80,
-        color: AppTheme.primary,
+        color:
+            AppTheme.primary,
       );
     }
 
     return Container(
       width: 180,
       height: 180,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: AppTheme.lightGreen,
+      clipBehavior:
+          Clip.antiAlias,
+      decoration:
+          BoxDecoration(
+        color:
+            AppTheme.lightGreen,
         borderRadius:
-            BorderRadius.circular(16),
+            BorderRadius.circular(
+          16,
+        ),
       ),
       child: isi,
     );

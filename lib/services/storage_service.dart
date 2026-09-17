@@ -1,115 +1,153 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:http/http.dart' as http;
 
 class StorageService {
-  final FirebaseStorage _storage =
-      FirebaseStorage.instance;
+  // ============================================================
+  // CLOUDINARY
+  // ============================================================
 
-  // ======================================================
-  // UPLOAD FOTO PERANGKAT DESA
-  // ======================================================
+  static const String cloudName = 'cpze3sx9';
+
+  static const String uploadPreset = 'desa_tembarak';
+
+  // ============================================================
+  // UPLOAD FOTO UMUM
+  // ============================================================
+
+  Future<String> uploadFoto({
+    required Uint8List bytes,
+    required String fileName,
+    required String folder,
+    void Function(double progress)? onProgress,
+  }) async {
+    try {
+      // Mulai progress
+      onProgress?.call(0);
+
+      final uri = Uri.parse(
+        'https://api.cloudinary.com/v1_1/$cloudName/image/upload',
+      );
+
+      final request = http.MultipartRequest(
+        'POST',
+        uri,
+      );
+
+      // Upload preset Cloudinary
+      request.fields['upload_preset'] = uploadPreset;
+
+      // Folder penyimpanan
+      request.fields['folder'] = folder;
+
+      // File foto
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'file',
+          bytes,
+          filename: fileName,
+        ),
+      );
+
+      // Karena http.MultipartRequest tidak memberikan
+      // progress upload secara langsung, kita tampilkan
+      // status mulai dan selesai.
+      onProgress?.call(0.1);
+
+      final streamedResponse = await request.send();
+
+      onProgress?.call(0.8);
+
+      final response = await http.Response.fromStream(
+        streamedResponse,
+      );
+
+      if (response.statusCode < 200 ||
+          response.statusCode >= 300) {
+        throw Exception(
+          'Upload Cloudinary gagal.\n'
+          'Status: ${response.statusCode}\n'
+          '${response.body}',
+        );
+      }
+
+      final Map<String, dynamic> data =
+          jsonDecode(response.body);
+
+      final dynamic secureUrl =
+          data['secure_url'];
+
+      if (secureUrl == null ||
+          secureUrl.toString().trim().isEmpty) {
+        throw Exception(
+          'Cloudinary tidak mengembalikan URL foto.',
+        );
+      }
+
+      onProgress?.call(1);
+
+      return secureUrl.toString();
+    } catch (e) {
+      onProgress?.call(0);
+
+      throw Exception(
+        'Gagal mengupload foto: $e',
+      );
+    }
+  }
+
+  // ============================================================
+  // FOTO PERANGKAT DESA
+  // ============================================================
 
   Future<String> uploadPerangkatFoto({
     required Uint8List bytes,
     required String fileName,
-  }) async {
-    try {
-      final extension = fileName.contains('.')
-          ? fileName.split('.').last
-          : 'jpg';
-
-      final filePath =
-          'perangkat/${DateTime.now().millisecondsSinceEpoch}.$extension';
-
-      final ref = _storage.ref().child(filePath);
-
-      await ref.putData(
-        bytes,
-        SettableMetadata(
-          contentType: _getContentType(extension),
-        ),
-      );
-
-      return await ref.getDownloadURL();
-    } catch (e) {
-      throw Exception(
-        'Gagal mengupload foto perangkat desa: $e',
-      );
-    }
+    void Function(double progress)? onProgress,
+  }) {
+    return uploadFoto(
+      bytes: bytes,
+      fileName: fileName,
+      folder: 'desa-tembarak/perangkat',
+      onProgress: onProgress,
+    );
   }
 
-  // ======================================================
-  // UPLOAD FOTO PRODUK DESA
-  // ======================================================
+  // ============================================================
+  // FOTO PRODUK DESA
+  // ============================================================
 
   Future<String> uploadProdukFoto({
     required Uint8List bytes,
     required String fileName,
-  }) async {
-    try {
-      final extension = fileName.contains('.')
-          ? fileName.split('.').last
-          : 'jpg';
-
-      final filePath =
-          'produk/${DateTime.now().millisecondsSinceEpoch}.$extension';
-
-      final ref = _storage.ref().child(filePath);
-
-      await ref.putData(
-        bytes,
-        SettableMetadata(
-          contentType: _getContentType(extension),
-        ),
-      );
-
-      return await ref.getDownloadURL();
-    } catch (e) {
-      throw Exception(
-        'Gagal mengupload foto produk: $e',
-      );
-    }
+    void Function(double progress)? onProgress,
+  }) {
+    return uploadFoto(
+      bytes: bytes,
+      fileName: fileName,
+      folder: 'desa-tembarak/produk',
+      onProgress: onProgress,
+    );
   }
 
-  // ======================================================
-  // HAPUS FOTO DARI FIREBASE STORAGE
-  // ======================================================
+  // ============================================================
+  // HAPUS FOTO
+  // ============================================================
 
-  Future<void> hapusFoto(String fotoUrl) async {
+  Future<void> hapusFoto(
+    String fotoUrl,
+  ) async {
     if (fotoUrl.trim().isEmpty) {
       return;
     }
 
-    try {
-      final ref = _storage.refFromURL(fotoUrl);
-
-      await ref.delete();
-    } catch (_) {
-      // Jika foto sudah tidak ada,
-      // proses tetap dilanjutkan.
-    }
-  }
-
-  // ======================================================
-  // CONTENT TYPE FOTO
-  // ======================================================
-
-  String _getContentType(String extension) {
-    switch (extension.toLowerCase()) {
-      case 'png':
-        return 'image/png';
-
-      case 'webp':
-        return 'image/webp';
-
-      case 'gif':
-        return 'image/gif';
-
-      case 'jpg':
-      case 'jpeg':
-      default:
-        return 'image/jpeg';
-    }
+    // Tidak menghapus file Cloudinary dari Flutter Web.
+    //
+    // Penghapusan Cloudinary membutuhkan autentikasi
+    // server-side/API Secret sehingga tidak aman
+    // jika dilakukan langsung dari browser.
+    //
+    // Untuk sekarang foto lama dibiarkan di Cloudinary.
   }
 }

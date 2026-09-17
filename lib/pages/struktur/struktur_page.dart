@@ -1,4 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+
 import '../../config/app_theme.dart';
 
 class StrukturPage extends StatelessWidget {
@@ -9,8 +11,56 @@ class StrukturPage extends StatelessWidget {
     return SingleChildScrollView(
       child: Column(
         children: [
-          _headerSection(),
-          _structureSection(context),
+          _header(),
+
+          StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+            stream: FirebaseFirestore.instance
+                .collection('perangkat')
+                .snapshots(),
+            builder: (context, snapshot) {
+              // LOADING
+              if (snapshot.connectionState ==
+                  ConnectionState.waiting) {
+                return const SizedBox(
+                  height: 400,
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: AppTheme.primary,
+                    ),
+                  ),
+                );
+              }
+
+              // ERROR
+              if (snapshot.hasError) {
+                return _error(
+                  snapshot.error.toString(),
+                );
+              }
+
+              // DATA FIRESTORE
+              final documents =
+                  snapshot.data?.docs ?? [];
+
+              // JIKA KOSONG
+              if (documents.isEmpty) {
+                return _empty();
+              }
+
+              // URUTKAN BERDASARKAN FIELD "urutan"
+              documents.sort((a, b) {
+                final urutanA =
+                    (a.data()['urutan'] ?? 0) as num;
+
+                final urutanB =
+                    (b.data()['urutan'] ?? 0) as num;
+
+                return urutanA.compareTo(urutanB);
+              });
+
+              return _content(documents);
+            },
+          ),
         ],
       ),
     );
@@ -20,7 +70,7 @@ class StrukturPage extends StatelessWidget {
   // HEADER
   // ============================================================
 
-  Widget _headerSection() {
+  Widget _header() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(
@@ -45,7 +95,9 @@ class StrukturPage extends StatelessWidget {
             color: Colors.white,
             size: 60,
           ),
+
           SizedBox(height: 20),
+
           Text(
             'Struktur Pemerintahan Desa',
             textAlign: TextAlign.center,
@@ -55,7 +107,9 @@ class StrukturPage extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
+
           SizedBox(height: 12),
+
           Text(
             'Pemerintah Desa Tembarak',
             textAlign: TextAlign.center,
@@ -70,13 +124,12 @@ class StrukturPage extends StatelessWidget {
   }
 
   // ============================================================
-  // STRUCTURE
+  // CONTENT
   // ============================================================
 
-  Widget _structureSection(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    final isMobile = width < 700;
-
+  Widget _content(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
+  ) {
     return Container(
       width: double.infinity,
       color: AppTheme.background,
@@ -91,68 +144,96 @@ class StrukturPage extends StatelessWidget {
           ),
           child: Column(
             children: [
-              _positionCard(
-                icon: Icons.person,
-                position: 'Kepala Desa',
-                name: 'Nama Kepala Desa',
-                large: true,
+              // DEBUG
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(
+                  bottom: 30,
+                ),
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.yellow.shade100,
+                  borderRadius:
+                      BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.orange.shade300,
+                  ),
+                ),
+                child: Text(
+                  'Firestore berhasil dibaca. '
+                  'Jumlah data: ${documents.length}',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
 
-              const SizedBox(height: 30),
+              const Text(
+                'Perangkat Desa',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppTheme.primary,
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
 
-              _connector(),
+              const SizedBox(height: 10),
 
-              const SizedBox(height: 30),
-
-              _positionCard(
-                icon: Icons.badge,
-                position: 'Sekretaris Desa',
-                name: 'Nama Sekretaris Desa',
-                large: true,
+              const Text(
+                'Susunan perangkat Pemerintah Desa Tembarak',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.black54,
+                  fontSize: 15,
+                ),
               ),
 
               const SizedBox(height: 40),
 
-              _connector(),
+              LayoutBuilder(
+                builder: (
+                  context,
+                  constraints,
+                ) {
+                  int columns = 1;
 
-              const SizedBox(height: 40),
+                  if (constraints.maxWidth >= 900) {
+                    columns = 3;
+                  } else if (constraints.maxWidth >= 600) {
+                    columns = 2;
+                  }
 
-              Wrap(
-                spacing: 20,
-                runSpacing: 20,
-                alignment: WrapAlignment.center,
-                children: [
-                  _positionCard(
-                    icon: Icons.account_balance_wallet,
-                    position: 'Kaur Keuangan',
-                    name: 'Nama Kaur Keuangan',
-                  ),
-                  _positionCard(
-                    icon: Icons.assignment,
-                    position: 'Kaur Perencanaan',
-                    name: 'Nama Kaur Perencanaan',
-                  ),
-                  _positionCard(
-                    icon: Icons.gavel,
-                    position: 'Kasi Pemerintahan',
-                    name: 'Nama Kasi Pemerintahan',
-                  ),
-                  _positionCard(
-                    icon: Icons.handshake,
-                    position: 'Kasi Kesejahteraan',
-                    name: 'Nama Kasi Kesejahteraan',
-                  ),
-                  _positionCard(
-                    icon: Icons.support_agent,
-                    position: 'Kasi Pelayanan',
-                    name: 'Nama Kasi Pelayanan',
-                  ),
-                ],
+                  return GridView.builder(
+                    shrinkWrap: true,
+                    physics:
+                        const NeverScrollableScrollPhysics(),
+                    itemCount: documents.length,
+                    gridDelegate:
+                        SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: columns,
+                      crossAxisSpacing: 20,
+                      mainAxisSpacing: 20,
+                      childAspectRatio: 0.78,
+                    ),
+                    itemBuilder: (
+                      context,
+                      index,
+                    ) {
+                      final data =
+                          documents[index].data();
+
+                      return _card(data);
+                    },
+                  );
+                },
               ),
 
               const SizedBox(height: 50),
 
-              _informationBox(isMobile),
+              _information(),
             ],
           ),
         ),
@@ -161,68 +242,160 @@ class StrukturPage extends StatelessWidget {
   }
 
   // ============================================================
-  // POSITION CARD
+  // CARD
   // ============================================================
 
-  Widget _positionCard({
-    required IconData icon,
-    required String position,
-    required String name,
-    bool large = false,
-  }) {
+  Widget _card(
+    Map<String, dynamic> data,
+  ) {
+    final String nama =
+        data['nama']?.toString() ?? '';
+
+    final String jabatan =
+        data['jabatan']?.toString() ?? '';
+
+    final String fotoUrl =
+        data['fotoUrl']?.toString() ?? '';
+
+    final String keterangan =
+        data['keterangan']?.toString() ?? '';
+
+    final int urutan =
+        data['urutan'] is num
+            ? (data['urutan'] as num).toInt()
+            : 0;
+
     return Container(
-      width: large ? 360 : 250,
-      padding: EdgeInsets.all(large ? 28 : 22),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius:
+            BorderRadius.circular(20),
         border: Border.all(
-          color: AppTheme.primary.withOpacity(0.10),
+          color:
+              AppTheme.primary.withOpacity(0.10),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color:
+                Colors.black.withOpacity(0.06),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
         ],
       ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
-          Container(
-            width: large ? 80 : 65,
-            height: large ? 80 : 65,
-            decoration: const BoxDecoration(
+          // FOTO
+          Expanded(
+            flex: 5,
+            child: Container(
+              width: double.infinity,
               color: AppTheme.lightGreen,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              icon,
-              color: AppTheme.primary,
-              size: large ? 40 : 32,
+              child: fotoUrl.isNotEmpty
+                  ? Image.network(
+                      fotoUrl,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      errorBuilder: (
+                        context,
+                        error,
+                        stackTrace,
+                      ) {
+                        return const Center(
+                          child: Icon(
+                            Icons.person,
+                            size: 80,
+                            color:
+                                AppTheme.primary,
+                          ),
+                        );
+                      },
+                    )
+                  : const Center(
+                      child: Icon(
+                        Icons.person,
+                        size: 80,
+                        color:
+                            AppTheme.primary,
+                      ),
+                    ),
             ),
           ),
 
-          const SizedBox(height: 16),
+          // INFORMASI
+          Expanded(
+            flex: 4,
+            child: Padding(
+              padding:
+                  const EdgeInsets.all(18),
+              child: Column(
+                mainAxisAlignment:
+                    MainAxisAlignment.center,
+                children: [
+                  Text(
+                    jabatan,
+                    textAlign:
+                        TextAlign.center,
+                    maxLines: 2,
+                    overflow:
+                        TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color:
+                          AppTheme.primary,
+                      fontSize: 18,
+                      fontWeight:
+                          FontWeight.bold,
+                    ),
+                  ),
 
-          Text(
-            position,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: AppTheme.primary,
-              fontSize: large ? 21 : 17,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+                  const SizedBox(height: 8),
 
-          const SizedBox(height: 8),
+                  Text(
+                    nama,
+                    textAlign:
+                        TextAlign.center,
+                    maxLines: 2,
+                    overflow:
+                        TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.black87,
+                      fontSize: 16,
+                      fontWeight:
+                          FontWeight.w600,
+                    ),
+                  ),
 
-          Text(
-            name,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.black54,
-              fontSize: 14,
+                  if (keterangan.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+
+                    Text(
+                      keterangan,
+                      textAlign:
+                          TextAlign.center,
+                      maxLines: 3,
+                      overflow:
+                          TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color:
+                            Colors.black54,
+                        fontSize: 13,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: 8),
+
+                  Text(
+                    'Urutan: $urutan',
+                    style: const TextStyle(
+                      color: Colors.black38,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -231,14 +404,111 @@ class StrukturPage extends StatelessWidget {
   }
 
   // ============================================================
-  // CONNECTOR
+  // EMPTY
   // ============================================================
 
-  Widget _connector() {
+  Widget _empty() {
     return Container(
-      width: 2,
-      height: 30,
-      color: AppTheme.primary.withOpacity(0.25),
+      width: double.infinity,
+      color: AppTheme.background,
+      padding: const EdgeInsets.symmetric(
+        vertical: 100,
+        horizontal: 25,
+      ),
+      child: const Center(
+        child: Column(
+          children: [
+            Icon(
+              Icons.people_outline,
+              size: 80,
+              color: Colors.grey,
+            ),
+
+            SizedBox(height: 20),
+
+            Text(
+              'Collection perangkat kosong.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            SizedBox(height: 10),
+
+            Text(
+              'Belum ada data perangkat yang '
+              'diterima dari Firestore.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.black54,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // ERROR
+  // ============================================================
+
+  Widget _error(
+    String message,
+  ) {
+    return Container(
+      width: double.infinity,
+      color: AppTheme.background,
+      padding: const EdgeInsets.all(60),
+      child: Center(
+        child: Container(
+          constraints:
+              const BoxConstraints(
+            maxWidth: 800,
+          ),
+          padding:
+              const EdgeInsets.all(30),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius:
+                BorderRadius.circular(20),
+          ),
+          child: Column(
+            children: [
+              const Icon(
+                Icons.error_outline,
+                color: Colors.red,
+                size: 60,
+              ),
+
+              const SizedBox(height: 20),
+
+              const Text(
+                'Firestore ERROR',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight:
+                      FontWeight.bold,
+                ),
+              ),
+
+              const SizedBox(height: 15),
+
+              SelectableText(
+                message,
+                textAlign:
+                    TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.red,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -246,48 +516,52 @@ class StrukturPage extends StatelessWidget {
   // INFORMATION
   // ============================================================
 
-  Widget _informationBox(bool isMobile) {
+  Widget _information() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(25),
+      padding:
+          const EdgeInsets.all(25),
       decoration: BoxDecoration(
         color: AppTheme.lightGreen,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius:
+            BorderRadius.circular(20),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: const Row(
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
         children: [
-          const Icon(
+          Icon(
             Icons.info_outline,
             color: AppTheme.primary,
             size: 28,
           ),
 
-          const SizedBox(width: 15),
+          SizedBox(width: 15),
 
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Informasi Struktur',
                   style: TextStyle(
-                    color: AppTheme.primary,
+                    color:
+                        AppTheme.primary,
                     fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                    fontWeight:
+                        FontWeight.bold,
                   ),
                 ),
 
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
 
                 Text(
-                  'Data nama dan jabatan perangkat Desa Tembarak '
-                  'di atas masih berupa data sementara. '
-                  'Nantinya data ini dapat dikelola melalui halaman '
-                  'Admin sehingga perubahan perangkat desa tidak '
-                  'perlu dilakukan langsung melalui kode program.',
-                  style: const TextStyle(
-                    color: Colors.black54,
+                  'Data perangkat desa ditampilkan '
+                  'langsung dari database Firestore.',
+                  style: TextStyle(
+                    color:
+                        Colors.black54,
                     fontSize: 14,
                     height: 1.6,
                   ),
