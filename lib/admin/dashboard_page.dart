@@ -6,6 +6,8 @@ import '../services/auth_service.dart';
 import 'profil/profil_admin_page.dart';
 import 'struktur/struktur_admin_page.dart';
 import 'produk/produk_admin_page.dart';
+import 'berita/berita_admin_page.dart';
+import 'galeri/galeri_admin_page.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
@@ -145,33 +147,27 @@ class DashboardPage extends StatelessWidget {
                         _MenuCard(
                           icon: Icons.article_outlined,
                           title: 'Berita Desa',
-                          subtitle:
-                              'Kelola berita dan informasi desa',
+                          subtitle: 'Kelola berita dan informasi desa',
                           onTap: () {
-                            ScaffoldMessenger.of(context)
-                                .showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Menu Berita Desa akan kita buat berikutnya.',
-                                ),
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    const BeritaAdminPage(),
                               ),
                             );
                           },
                         ),
 
                         // GALERI
+                        // GALERI
                         _MenuCard(
                           icon: Icons.photo_library_outlined,
                           title: 'Galeri',
-                          subtitle:
-                              'Kelola foto kegiatan desa',
+                          subtitle: 'Kelola foto kegiatan desa',
                           onTap: () {
-                            ScaffoldMessenger.of(context)
-                                .showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Menu Galeri akan kita buat berikutnya.',
-                                ),
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const GaleriAdminPage(),
                               ),
                             );
                           },

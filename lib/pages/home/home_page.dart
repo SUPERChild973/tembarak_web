@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../config/app_theme.dart';
+import '../../models/berita.dart';
+import '../../services/berita_service.dart';
+import '../berita/berita_detail_page.dart';
 
 class HomePage extends StatelessWidget {
   final String currentPage;
@@ -666,136 +669,279 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  // ============================================================
-  // BERITA
-  // ============================================================
+// ============================================================
+// BERITA
+// ============================================================
 
-  Widget _newsSection(BuildContext context) {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 25,
-        vertical: 65,
-      ),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1100),
-          child: Column(
-            children: [
-              const Text(
-                'Berita & Informasi',
-                style: TextStyle(
-                  color: AppTheme.primary,
-                  fontSize: 30,
-                  fontWeight: FontWeight.bold,
-                ),
+Widget _newsSection(
+  BuildContext context,
+) {
+  final beritaService =
+      BeritaService();
+
+  return Container(
+    color: Colors.white,
+    padding:
+        const EdgeInsets.symmetric(
+      horizontal: 25,
+      vertical: 65,
+    ),
+    child: Center(
+      child: ConstrainedBox(
+        constraints:
+            const BoxConstraints(
+          maxWidth: 1100,
+        ),
+        child: Column(
+          children: [
+            const Text(
+              'Berita & Informasi',
+              style: TextStyle(
+                color:
+                    AppTheme.primary,
+                fontSize: 30,
+                fontWeight:
+                    FontWeight.bold,
               ),
+            ),
 
-              const SizedBox(height: 10),
+            const SizedBox(
+              height: 10,
+            ),
 
-              const Text(
-                'Informasi terbaru seputar kegiatan Desa Tembarak',
-                style: TextStyle(
-                  color: Colors.black54,
-                  fontSize: 15,
-                ),
+            const Text(
+              'Informasi terbaru seputar kegiatan Desa Tembarak',
+              style: TextStyle(
+                color:
+                    Colors.black54,
+                fontSize: 15,
               ),
+            ),
 
-              const SizedBox(height: 35),
+            const SizedBox(
+              height: 35,
+            ),
 
-              Wrap(
-                spacing: 20,
-                runSpacing: 20,
-                alignment: WrapAlignment.center,
-                children: [
-                  _newsPreview(
-                    'Gotong Royong Membersihkan Lingkungan Desa',
-                    '10 September 2026',
-                  ),
-                  _newsPreview(
-                    'Pelatihan UMKM Desa',
-                    '7 September 2026',
-                  ),
-                  _newsPreview(
-                    'Musyawarah Desa Tahun 2026',
-                    '5 September 2026',
-                  ),
-                ],
+            StreamBuilder<List<Berita>>(
+              stream: beritaService
+                  .getBeritaTerbaru(
+                limit: 3,
               ),
+              builder: (
+                context,
+                snapshot,
+              ) {
+                if (snapshot
+                        .connectionState ==
+                    ConnectionState.waiting) {
+                  return const Padding(
+                    padding:
+                        EdgeInsets.all(30),
+                    child: Center(
+                      child:
+                          CircularProgressIndicator(),
+                    ),
+                  );
+                }
 
-              const SizedBox(height: 30),
+                if (snapshot.hasError) {
+                  return const Text(
+                    'Berita gagal dimuat.',
+                  );
+                }
 
-              OutlinedButton(
-                onPressed: () {
-                  onNavigate('berita');
-                },
-                child: const Text('Lihat Semua Berita'),
+                final berita =
+                    snapshot.data ?? [];
+
+                if (berita.isEmpty) {
+                  return const Text(
+                    'Belum ada berita.',
+                  );
+                }
+
+                return Wrap(
+                  spacing: 20,
+                  runSpacing: 20,
+                  alignment:
+                      WrapAlignment
+                          .center,
+                  children:
+                      berita.map(
+                    (item) {
+                      return _newsPreview(
+                        context,
+                        item,
+                      );
+                    },
+                  ).toList(),
+                );
+              },
+            ),
+
+            const SizedBox(
+              height: 30,
+            ),
+
+            OutlinedButton(
+              onPressed: () {
+                onNavigate('berita');
+              },
+              child: const Text(
+                'Lihat Semua Berita',
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
-  Widget _newsPreview(
-    String title,
-    String date,
-  ) {
-    return Container(
-      width: 320,
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: AppTheme.background,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Colors.black.withOpacity(0.05),
+Widget _newsPreview(
+  BuildContext context,
+  Berita berita,
+) {
+  return Container(
+    width: 320,
+    padding:
+        const EdgeInsets.all(22),
+    decoration:
+        BoxDecoration(
+      color:
+          AppTheme.background,
+      borderRadius:
+          BorderRadius.circular(
+        20,
+      ),
+      border: Border.all(
+        color: Colors.black
+            .withOpacity(0.05),
+      ),
+    ),
+    child: Column(
+      crossAxisAlignment:
+          CrossAxisAlignment.start,
+      children: [
+        // FOTO
+        ClipRRect(
+          borderRadius:
+              BorderRadius.circular(
+            15,
+          ),
+          child: berita.fotoUrl
+                  .isNotEmpty
+              ? Image.network(
+                  berita.fotoUrl,
+                  width:
+                      double.infinity,
+                  height: 130,
+                  fit: BoxFit.cover,
+                  errorBuilder:
+                      (
+                    context,
+                    error,
+                    stackTrace,
+                  ) {
+                    return _newsImagePlaceholder();
+                  },
+                )
+              : _newsImagePlaceholder(),
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: double.infinity,
-            height: 130,
-            decoration: BoxDecoration(
-              color: AppTheme.lightGreen,
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: const Icon(
-              Icons.article,
-              size: 55,
-              color: AppTheme.primary,
+
+        const SizedBox(
+          height: 18,
+        ),
+
+        Text(
+          berita.kategori,
+          style:
+              const TextStyle(
+            color:
+                AppTheme.primary,
+            fontSize: 12,
+            fontWeight:
+                FontWeight.bold,
+          ),
+        ),
+
+        const SizedBox(
+          height: 8,
+        ),
+
+        Text(
+          berita.judul,
+          maxLines: 2,
+          overflow:
+              TextOverflow.ellipsis,
+          style:
+              const TextStyle(
+            fontSize: 16,
+            fontWeight:
+                FontWeight.bold,
+            height: 1.4,
+          ),
+        ),
+
+        const SizedBox(
+          height: 10,
+        ),
+
+        Text(
+          berita.ringkasan,
+          maxLines: 2,
+          overflow:
+              TextOverflow.ellipsis,
+          style:
+              const TextStyle(
+            color:
+                Colors.black54,
+            fontSize: 13,
+            height: 1.5,
+          ),
+        ),
+
+        const SizedBox(
+          height: 15,
+        ),
+
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      BeritaDetailPage(
+                    berita: berita,
+                  ),
+                ),
+              );
+            },
+            child: const Text(
+              'Baca Selengkapnya',
             ),
           ),
+        ),
+      ],
+    ),
+  );
+}
 
-          const SizedBox(height: 18),
-
-          Text(
-            date,
-            style: const TextStyle(
-              color: AppTheme.primary,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-
-          const SizedBox(height: 8),
-
-          Text(
-            title,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              height: 1.4,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+Widget _newsImagePlaceholder() {
+  return Container(
+    width: double.infinity,
+    height: 130,
+    color:
+        AppTheme.lightGreen,
+    child: const Icon(
+      Icons.article,
+      size: 55,
+      color:
+          AppTheme.primary,
+    ),
+  );
+}
 
   // ============================================================
   // KEGIATAN

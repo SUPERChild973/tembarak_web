@@ -150,4 +150,38 @@ class StorageService {
     //
     // Untuk sekarang foto lama dibiarkan di Cloudinary.
   }
+
+  // ============================================================
+  // FOTO BERITA
+  // ============================================================
+
+  Future<String> uploadBeritaFoto({
+    required Uint8List bytes,
+    required String fileName,
+    void Function(double progress)? onProgress,
+  }) {
+  return uploadFoto(
+    bytes: bytes,
+    fileName: fileName,
+    folder: 'desa-tembarak/berita',
+    onProgress: onProgress,
+    );
+  }
+
+  // ============================================================
+  // FOTO GALERI
+  // ============================================================
+
+  Future<String> uploadGaleriFoto({
+    required Uint8List bytes,
+    required String fileName,
+    void Function(double progress)? onProgress,
+  }) {
+    return uploadFoto(
+      bytes: bytes,
+      fileName: fileName,
+      folder: 'desa-tembarak/galeri',
+      onProgress: onProgress,
+    );
+  }
 }

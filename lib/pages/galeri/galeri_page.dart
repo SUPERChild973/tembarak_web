@@ -1,9 +1,61 @@
 import 'package:flutter/material.dart';
+
 import '../../config/app_theme.dart';
+import '../../models/galeri.dart';
+import '../../services/galeri_service.dart';
 
 class GaleriPage extends StatelessWidget {
   const GaleriPage({super.key});
 
+  // ============================================================
+  // FORMAT TANGGAL
+  // ============================================================
+  String _formatTanggal(DateTime? date) {
+    if (date == null) {
+      return '-';
+    }
+
+    const bulan = [
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember',
+    ];
+
+    return '${date.day} '
+        '${bulan[date.month - 1]} '
+        '${date.year}';
+  }
+
+  // ============================================================
+  // PLACEHOLDER FOTO
+  // ============================================================
+  Widget _galleryPlaceholder() {
+    return Container(
+      width: double.infinity,
+      height: 220,
+      color: AppTheme.lightGreen,
+      child: const Center(
+        child: Icon(
+          Icons.photo,
+          color: AppTheme.primary,
+          size: 75,
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // BUILD
+  // ============================================================
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -19,7 +71,6 @@ class GaleriPage extends StatelessWidget {
   // ============================================================
   // HEADER
   // ============================================================
-
   Widget _headerSection() {
     return Container(
       width: double.infinity,
@@ -70,68 +121,10 @@ class GaleriPage extends StatelessWidget {
   }
 
   // ============================================================
-  // GALLERY
+  // GALLERY SECTION
   // ============================================================
-
   Widget _gallerySection() {
-    final activities = [
-      {
-        'title': 'Gotong Royong Desa',
-        'date': '10 September 2026',
-        'description':
-            'Kegiatan gotong royong membersihkan lingkungan desa.',
-        'icon': Icons.cleaning_services,
-      },
-      {
-        'title': 'Kegiatan Posyandu',
-        'date': '7 September 2026',
-        'description':
-            'Kegiatan pelayanan kesehatan masyarakat melalui Posyandu.',
-        'icon': Icons.health_and_safety,
-      },
-      {
-        'title': 'Musyawarah Desa',
-        'date': '5 September 2026',
-        'description':
-            'Musyawarah bersama masyarakat membahas pembangunan desa.',
-        'icon': Icons.groups,
-      },
-      {
-        'title': 'Pelatihan UMKM',
-        'date': '2 September 2026',
-        'description':
-            'Pelatihan untuk meningkatkan kemampuan pelaku UMKM desa.',
-        'icon': Icons.storefront,
-      },
-      {
-        'title': 'Kegiatan Karang Taruna',
-        'date': '30 Agustus 2026',
-        'description':
-            'Kegiatan kepemudaan dan pemberdayaan generasi muda desa.',
-        'icon': Icons.diversity_3,
-      },
-      {
-        'title': 'Kegiatan Desa',
-        'date': '25 Agustus 2026',
-        'description':
-            'Dokumentasi kegiatan masyarakat Desa Tembarak.',
-        'icon': Icons.celebration,
-      },
-      {
-        'title': 'Penanaman Pohon',
-        'date': '20 Agustus 2026',
-        'description':
-            'Kegiatan penghijauan dan menjaga kelestarian lingkungan desa.',
-        'icon': Icons.park,
-      },
-      {
-        'title': 'Kegiatan PKK',
-        'date': '18 Agustus 2026',
-        'description':
-            'Kegiatan pemberdayaan dan pembinaan keluarga masyarakat desa.',
-        'icon': Icons.family_restroom,
-      },
-    ];
+    final galeriService = GaleriService();
 
     return Container(
       width: double.infinity,
@@ -169,18 +162,67 @@ class GaleriPage extends StatelessWidget {
 
               const SizedBox(height: 40),
 
-              Wrap(
-                spacing: 22,
-                runSpacing: 22,
-                alignment: WrapAlignment.center,
-                children: activities.map((item) {
-                  return _galleryCard(
-                    title: item['title'] as String,
-                    date: item['date'] as String,
-                    description: item['description'] as String,
-                    icon: item['icon'] as IconData,
+              // ==================================================
+              // DATA GALERI DARI FIRESTORE
+              // ==================================================
+              StreamBuilder<List<Galeri>>(
+                stream: galeriService.getGaleri(),
+                builder: (
+                  context,
+                  snapshot,
+                ) {
+                  // ==================================================
+                  // LOADING
+                  // ==================================================
+                  if (snapshot.connectionState ==
+                      ConnectionState.waiting) {
+                    return const Padding(
+                      padding: EdgeInsets.all(40),
+                      child: CircularProgressIndicator(),
+                    );
+                  }
+
+                  // ==================================================
+                  // ERROR
+                  // ==================================================
+                  if (snapshot.hasError) {
+                    return Text(
+                      'Gagal memuat galeri:\n${snapshot.error}',
+                      textAlign: TextAlign.center,
+                    );
+                  }
+
+                  // ==================================================
+                  // DATA
+                  // ==================================================
+                  final galeri = snapshot.data ?? [];
+
+                  // ==================================================
+                  // DATA KOSONG
+                  // ==================================================
+                  if (galeri.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.all(40),
+                      child: Text(
+                        'Belum ada dokumentasi kegiatan.',
+                      ),
+                    );
+                  }
+
+                  // ==================================================
+                  // TAMPILKAN GALERI
+                  // ==================================================
+                  return Wrap(
+                    spacing: 22,
+                    runSpacing: 22,
+                    alignment: WrapAlignment.center,
+                    children: galeri.map((item) {
+                      return _galleryCard(
+                        galeri: item,
+                      );
+                    }).toList(),
                   );
-                }).toList(),
+                },
               ),
             ],
           ),
@@ -192,12 +234,8 @@ class GaleriPage extends StatelessWidget {
   // ============================================================
   // GALLERY CARD
   // ============================================================
-
   Widget _galleryCard({
-    required String title,
-    required String date,
-    required String description,
-    required IconData icon,
+    required Galeri galeri,
   }) {
     return Container(
       width: 350,
@@ -215,10 +253,9 @@ class GaleriPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ====================================================
-          // TEMPAT FOTO
-          // ====================================================
-
+          // ======================================================
+          // FOTO
+          // ======================================================
           Container(
             width: double.infinity,
             height: 220,
@@ -228,64 +265,58 @@ class GaleriPage extends StatelessWidget {
                 top: Radius.circular(22),
               ),
             ),
-            child: Stack(
-              children: [
-                const Center(
-                  child: Icon(
-                    Icons.photo,
-                    color: AppTheme.primary,
-                    size: 75,
-                  ),
-                ),
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(22),
+              ),
+              child: galeri.fotoUrl.isNotEmpty
+                  ? Image.network(
+                      galeri.fotoUrl,
+                      width: double.infinity,
+                      height: 220,
+                      fit: BoxFit.cover,
 
-                Positioned(
-                  top: 15,
-                  right: 15,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Text(
-                      'Foto',
-                      style: TextStyle(
-                        color: AppTheme.primary,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+                      // ==================================================
+                      // JIKA GAMBAR GAGAL DIMUAT
+                      // ==================================================
+                      errorBuilder: (
+                        context,
+                        error,
+                        stackTrace,
+                      ) {
+                        return _galleryPlaceholder();
+                      },
+                    )
+                  : _galleryPlaceholder(),
             ),
           ),
 
-          // ====================================================
+          // ======================================================
           // CONTENT
-          // ====================================================
-
+          // ======================================================
           Padding(
             padding: const EdgeInsets.all(23),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // ==================================================
+                // TANGGAL
+                // ==================================================
                 Row(
                   children: [
-                    Icon(
-                      icon,
+                    const Icon(
+                      Icons.calendar_today_outlined,
                       color: AppTheme.primary,
-                      size: 20,
+                      size: 18,
                     ),
 
                     const SizedBox(width: 8),
 
                     Expanded(
                       child: Text(
-                        date,
+                        _formatTanggal(
+                          galeri.createdAt,
+                        ),
                         style: const TextStyle(
                           color: AppTheme.primary,
                           fontSize: 12,
@@ -298,8 +329,11 @@ class GaleriPage extends StatelessWidget {
 
                 const SizedBox(height: 12),
 
+                // ==================================================
+                // JUDUL
+                // ==================================================
                 Text(
-                  title,
+                  galeri.judul,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -312,8 +346,11 @@ class GaleriPage extends StatelessWidget {
 
                 const SizedBox(height: 10),
 
+                // ==================================================
+                // DESKRIPSI
+                // ==================================================
                 Text(
-                  description,
+                  galeri.deskripsi,
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
