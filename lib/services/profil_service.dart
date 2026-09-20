@@ -66,4 +66,6 @@ class ProfilService {
       );
     }
   }
+
+  Future<void> saveHomepageSettings({required String jumlahPenduduk, required String jumlahKeluarga, required String jumlahDusun, required String jumlahRtRw, required String videoJudul, required String videoUrl, required String footerDeskripsi, required String footerAlamat, required String footerTelepon, required String footerEmail, required String footerCopyright}) async {}
 }

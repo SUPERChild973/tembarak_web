@@ -8,6 +8,7 @@ import 'struktur/struktur_admin_page.dart';
 import 'produk/produk_admin_page.dart';
 import 'berita/berita_admin_page.dart';
 import 'galeri/galeri_admin_page.dart';
+import 'pengaturan/pengaturan_admin_page.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
@@ -174,18 +175,17 @@ class DashboardPage extends StatelessWidget {
                         ),
 
                         // PENGATURAN
+                        // PENGATURAN
                         _MenuCard(
                           icon: Icons.settings_outlined,
                           title: 'Pengaturan',
                           subtitle:
-                              'Pengaturan website desa',
+                              'Kelola isi beranda dan informasi website',
                           onTap: () {
-                            ScaffoldMessenger.of(context)
-                                .showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Menu Pengaturan akan kita buat berikutnya.',
-                                ),
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    const PengaturanAdminPage(),
                               ),
                             );
                           },
