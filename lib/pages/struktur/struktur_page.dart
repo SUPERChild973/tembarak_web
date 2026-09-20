@@ -216,7 +216,7 @@ class StrukturPage extends StatelessWidget {
                       crossAxisCount: columns,
                       crossAxisSpacing: 20,
                       mainAxisSpacing: 20,
-                      childAspectRatio: 0.78,
+                      childAspectRatio: 0.65,
                     ),
                     itemBuilder: (
                       context,
@@ -288,7 +288,7 @@ class StrukturPage extends StatelessWidget {
         children: [
           // FOTO
           Expanded(
-            flex: 5,
+            flex: 6,
             child: Container(
               width: double.infinity,
               color: AppTheme.lightGreen,

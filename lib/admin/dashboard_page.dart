@@ -19,6 +19,10 @@ class DashboardPage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppTheme.background,
+
+      // =========================
+      // APP BAR
+      // =========================
       appBar: AppBar(
         title: const Text(
           'Dashboard Admin',
@@ -44,6 +48,10 @@ class DashboardPage extends StatelessWidget {
           const SizedBox(width: 10),
         ],
       ),
+
+      // =========================
+      // BODY
+      // =========================
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(30),
         child: Center(
@@ -54,6 +62,9 @@ class DashboardPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // =========================
+                // JUDUL
+                // =========================
                 const Text(
                   'Selamat Datang, Admin 👋',
                   style: TextStyle(
@@ -75,6 +86,9 @@ class DashboardPage extends StatelessWidget {
 
                 const SizedBox(height: 35),
 
+                // =========================
+                // MENU
+                // =========================
                 LayoutBuilder(
                   builder: (context, constraints) {
                     int crossAxisCount = 3;
@@ -96,7 +110,9 @@ class DashboardPage extends StatelessWidget {
                           const NeverScrollableScrollPhysics(),
                       childAspectRatio: 1.35,
                       children: [
-                        // PROFIL
+                        // =========================
+                        // PROFIL DESA
+                        // =========================
                         _MenuCard(
                           icon: Icons.account_balance_outlined,
                           title: 'Profil Desa',
@@ -112,7 +128,9 @@ class DashboardPage extends StatelessWidget {
                           },
                         ),
 
-                        // STRUKTUR
+                        // =========================
+                        // STRUKTUR DESA
+                        // =========================
                         _MenuCard(
                           icon: Icons.account_tree_outlined,
                           title: 'Struktur Desa',
@@ -128,7 +146,9 @@ class DashboardPage extends StatelessWidget {
                           },
                         ),
 
-                        // PRODUK
+                        // =========================
+                        // PRODUK DESA
+                        // =========================
                         _MenuCard(
                           icon: Icons.storefront_outlined,
                           title: 'Produk Desa',
@@ -144,11 +164,14 @@ class DashboardPage extends StatelessWidget {
                           },
                         ),
 
-                        // BERITA
+                        // =========================
+                        // BERITA DESA
+                        // =========================
                         _MenuCard(
                           icon: Icons.article_outlined,
                           title: 'Berita Desa',
-                          subtitle: 'Kelola berita dan informasi desa',
+                          subtitle:
+                              'Kelola berita dan informasi desa',
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
@@ -159,23 +182,27 @@ class DashboardPage extends StatelessWidget {
                           },
                         ),
 
+                        // =========================
                         // GALERI
-                        // GALERI
+                        // =========================
                         _MenuCard(
                           icon: Icons.photo_library_outlined,
                           title: 'Galeri',
-                          subtitle: 'Kelola foto kegiatan desa',
+                          subtitle:
+                              'Kelola foto kegiatan desa',
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (_) => const GaleriAdminPage(),
+                                builder: (_) =>
+                                    const GaleriAdminPage(),
                               ),
                             );
                           },
                         ),
 
+                        // =========================
                         // PENGATURAN
-                        // PENGATURAN
+                        // =========================
                         _MenuCard(
                           icon: Icons.settings_outlined,
                           title: 'Pengaturan',
@@ -202,6 +229,10 @@ class DashboardPage extends StatelessWidget {
     );
   }
 }
+
+// ======================================================
+// MENU CARD
+// ======================================================
 
 class _MenuCard extends StatelessWidget {
   final IconData icon;
@@ -240,6 +271,7 @@ class _MenuCard extends StatelessWidget {
             crossAxisAlignment:
                 CrossAxisAlignment.start,
             children: [
+              // ICON
               Container(
                 width: 58,
                 height: 58,
@@ -257,6 +289,7 @@ class _MenuCard extends StatelessWidget {
 
               const Spacer(),
 
+              // TITLE
               Text(
                 title,
                 style: const TextStyle(
@@ -268,6 +301,7 @@ class _MenuCard extends StatelessWidget {
 
               const SizedBox(height: 7),
 
+              // SUBTITLE
               Text(
                 subtitle,
                 style: const TextStyle(

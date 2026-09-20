@@ -6,7 +6,10 @@ class ProfilService {
 
   final String _collection = 'profil';
 
-  /// Mengambil data profil desa
+  // ============================================================
+  // MENGAMBIL DATA PROFIL DESA
+  // ============================================================
+
   Future<Map<String, dynamic>?> getProfil() async {
     try {
       final doc = await _firestore
@@ -26,7 +29,10 @@ class ProfilService {
     }
   }
 
-  /// Menyimpan / memperbarui data profil desa
+  // ============================================================
+  // MENYIMPAN / MEMPERBARUI DATA PROFIL DESA
+  // ============================================================
+
   Future<void> saveProfil({
     required String namaDesa,
     required String kecamatan,
@@ -37,35 +43,31 @@ class ProfilService {
     required String misi,
     required String kondisi,
     required String potensi,
-    required String alamat,
-    required String telepon,
-    required String email,
   }) async {
     try {
       await _firestore
           .collection(_collection)
           .doc('desa')
-          .set({
-        'namaDesa': namaDesa,
-        'kecamatan': kecamatan,
-        'kabupaten': kabupaten,
-        'provinsi': provinsi,
-        'sejarah': sejarah,
-        'visi': visi,
-        'misi': misi,
-        'kondisi': kondisi,
-        'potensi': potensi,
-        'alamat': alamat,
-        'telepon': telepon,
-        'email': email,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+          .set(
+        {
+          'namaDesa': namaDesa,
+          'kecamatan': kecamatan,
+          'kabupaten': kabupaten,
+          'provinsi': provinsi,
+          'sejarah': sejarah,
+          'visi': visi,
+          'misi': misi,
+          'kondisi': kondisi,
+          'potensi': potensi,
+          'updatedAt':
+              FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
     } catch (e) {
       throw Exception(
         'Gagal menyimpan data profil desa: $e',
       );
     }
   }
-
-  Future<void> saveHomepageSettings({required String jumlahPenduduk, required String jumlahKeluarga, required String jumlahDusun, required String jumlahRtRw, required String videoJudul, required String videoUrl, required String footerDeskripsi, required String footerAlamat, required String footerTelepon, required String footerEmail, required String footerCopyright}) async {}
 }

@@ -275,7 +275,7 @@ class _StrukturAdminPageState
                               mainAxisSpacing:
                                   20,
                               childAspectRatio:
-                                  0.72,
+                                  0.65,
                             ),
                             itemBuilder:
                                 (
@@ -378,7 +378,7 @@ class _KartuPerangkat
       child: Column(
         children: [
           Expanded(
-            flex: 5,
+            flex: 6,
             child: Container(
               width: double.infinity,
               color:

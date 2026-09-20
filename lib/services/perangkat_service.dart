@@ -11,15 +11,21 @@ class PerangkatService {
   Stream<List<Perangkat>> getPerangkat() {
     return _firestore
         .collection(_collection)
-        .orderBy('urutan')
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) {
+      final data = snapshot.docs.map((doc) {
         return Perangkat.fromMap(
           doc.id,
           doc.data(),
         );
       }).toList();
+
+      // Urutkan berdasarkan urutan
+      data.sort(
+        (a, b) => a.urutan.compareTo(b.urutan),
+      );
+
+      return data;
     });
   }
 
@@ -31,14 +37,18 @@ class PerangkatService {
     required int urutan,
   }) async {
     try {
-      await _firestore.collection(_collection).add({
+      await _firestore
+          .collection(_collection)
+          .add({
         'nama': nama,
         'jabatan': jabatan,
         'fotoUrl': fotoUrl,
         'keterangan': keterangan,
         'urutan': urutan,
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
+        'createdAt':
+            FieldValue.serverTimestamp(),
+        'updatedAt':
+            FieldValue.serverTimestamp(),
       });
     } catch (e) {
       throw Exception(
@@ -65,7 +75,8 @@ class PerangkatService {
         'fotoUrl': fotoUrl,
         'keterangan': keterangan,
         'urutan': urutan,
-        'updatedAt': FieldValue.serverTimestamp(),
+        'updatedAt':
+            FieldValue.serverTimestamp(),
       });
     } catch (e) {
       throw Exception(
@@ -74,7 +85,9 @@ class PerangkatService {
     }
   }
 
-  Future<void> hapusPerangkat(String id) async {
+  Future<void> hapusPerangkat(
+    String id,
+  ) async {
     try {
       await _firestore
           .collection(_collection)

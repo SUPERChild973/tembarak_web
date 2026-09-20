@@ -11,25 +11,30 @@ class ProfilAdminPage extends StatefulWidget {
 }
 
 class _ProfilAdminPageState extends State<ProfilAdminPage> {
-  final _formKey = GlobalKey<FormState>();
+  final ProfilService _profilService = ProfilService();
+
+  // =========================
+  // CONTROLLERS
+  // =========================
 
   final _namaDesaController = TextEditingController();
   final _kecamatanController = TextEditingController();
   final _kabupatenController = TextEditingController();
   final _provinsiController = TextEditingController();
+
   final _sejarahController = TextEditingController();
   final _visiController = TextEditingController();
   final _misiController = TextEditingController();
+
   final _kondisiController = TextEditingController();
   final _potensiController = TextEditingController();
-  final _alamatController = TextEditingController();
-  final _teleponController = TextEditingController();
-  final _emailController = TextEditingController();
-
-  final ProfilService _profilService = ProfilService();
 
   bool _isLoading = true;
   bool _isSaving = false;
+
+  // =========================
+  // INIT
+  // =========================
 
   @override
   void initState() {
@@ -37,30 +42,73 @@ class _ProfilAdminPageState extends State<ProfilAdminPage> {
     _loadProfil();
   }
 
+  // =========================
+  // DISPOSE
+  // =========================
+
+  @override
+  void dispose() {
+    _namaDesaController.dispose();
+    _kecamatanController.dispose();
+    _kabupatenController.dispose();
+    _provinsiController.dispose();
+
+    _sejarahController.dispose();
+    _visiController.dispose();
+    _misiController.dispose();
+
+    _kondisiController.dispose();
+    _potensiController.dispose();
+
+    super.dispose();
+  }
+
+  // =========================
+  // LOAD PROFIL
+  // =========================
+
   Future<void> _loadProfil() async {
     try {
       final data = await _profilService.getProfil();
 
+      if (!mounted) return;
+
       if (data != null) {
-        _namaDesaController.text = data['namaDesa'] ?? '';
-        _kecamatanController.text = data['kecamatan'] ?? '';
-        _kabupatenController.text = data['kabupaten'] ?? '';
-        _provinsiController.text = data['provinsi'] ?? '';
-        _sejarahController.text = data['sejarah'] ?? '';
-        _visiController.text = data['visi'] ?? '';
-        _misiController.text = data['misi'] ?? '';
-        _kondisiController.text = data['kondisi'] ?? '';
-        _potensiController.text = data['potensi'] ?? '';
-        _alamatController.text = data['alamat'] ?? '';
-        _teleponController.text = data['telepon'] ?? '';
-        _emailController.text = data['email'] ?? '';
+        _namaDesaController.text =
+            data['namaDesa']?.toString() ?? '';
+
+        _kecamatanController.text =
+            data['kecamatan']?.toString() ?? '';
+
+        _kabupatenController.text =
+            data['kabupaten']?.toString() ?? '';
+
+        _provinsiController.text =
+            data['provinsi']?.toString() ?? '';
+
+        _sejarahController.text =
+            data['sejarah']?.toString() ?? '';
+
+        _visiController.text =
+            data['visi']?.toString() ?? '';
+
+        _misiController.text =
+            data['misi']?.toString() ?? '';
+
+        _kondisiController.text =
+            data['kondisi']?.toString() ?? '';
+
+        _potensiController.text =
+            data['potensi']?.toString() ?? '';
       }
     } catch (e) {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e.toString()),
+          content: Text(
+            'Gagal memuat profil desa: $e',
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -73,8 +121,16 @@ class _ProfilAdminPageState extends State<ProfilAdminPage> {
     }
   }
 
+  // =========================
+  // SAVE PROFIL
+  // =========================
+
   Future<void> _saveProfil() async {
-    if (!_formKey.currentState!.validate()) {
+    if (_namaDesaController.text.trim().isEmpty) {
+      _showMessage(
+        'Nama desa wajib diisi.',
+        isError: true,
+      );
       return;
     }
 
@@ -93,29 +149,19 @@ class _ProfilAdminPageState extends State<ProfilAdminPage> {
         misi: _misiController.text.trim(),
         kondisi: _kondisiController.text.trim(),
         potensi: _potensiController.text.trim(),
-        alamat: _alamatController.text.trim(),
-        telepon: _teleponController.text.trim(),
-        email: _emailController.text.trim(),
       );
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Profil desa berhasil disimpan.',
-          ),
-          backgroundColor: AppTheme.primary,
-        ),
+      _showMessage(
+        'Profil desa berhasil disimpan.',
       );
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString()),
-          backgroundColor: Colors.red,
-        ),
+      _showMessage(
+        'Gagal menyimpan profil desa: $e',
+        isError: true,
       );
     } finally {
       if (mounted) {
@@ -126,63 +172,36 @@ class _ProfilAdminPageState extends State<ProfilAdminPage> {
     }
   }
 
-  @override
-  void dispose() {
-    _namaDesaController.dispose();
-    _kecamatanController.dispose();
-    _kabupatenController.dispose();
-    _provinsiController.dispose();
-    _sejarahController.dispose();
-    _visiController.dispose();
-    _misiController.dispose();
-    _kondisiController.dispose();
-    _potensiController.dispose();
-    _alamatController.dispose();
-    _teleponController.dispose();
-    _emailController.dispose();
-    super.dispose();
-  }
+  // =========================
+  // MESSAGE
+  // =========================
 
-  Widget _textField({
-    required String label,
-    required String hint,
-    required TextEditingController controller,
-    int maxLines = 1,
-    bool required = false,
+  void _showMessage(
+    String message, {
+    bool isError = false,
   }) {
-    return TextFormField(
-      controller: controller,
-      maxLines: maxLines,
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        alignLabelWithHint: maxLines > 1,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(
-            color: AppTheme.primary,
-            width: 2,
-          ),
-        ),
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor:
+            isError ? Colors.red : AppTheme.primary,
       ),
-      validator: required
-          ? (value) {
-              if (value == null || value.trim().isEmpty) {
-                return '$label wajib diisi.';
-              }
-              return null;
-            }
-          : null,
     );
   }
+
+  // =========================
+  // BUILD
+  // =========================
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.background,
+
+      // =========================
+      // APP BAR
+      // =========================
+
       appBar: AppBar(
         title: const Text(
           'Profil Desa',
@@ -191,246 +210,389 @@ class _ProfilAdminPageState extends State<ProfilAdminPage> {
           ),
         ),
       ),
+
+      // =========================
+      // BODY
+      // =========================
+
       body: _isLoading
           ? const Center(
-              child: CircularProgressIndicator(
-                color: AppTheme.primary,
-              ),
+              child: CircularProgressIndicator(),
             )
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(25),
+              padding: const EdgeInsets.all(30),
               child: Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(
                     maxWidth: 1000,
                   ),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Informasi Dasar Desa',
-                          style: TextStyle(
-                            fontSize: 21,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.primary,
-                          ),
+                  child: Column(
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
+                    children: [
+                      // =========================
+                      // HEADER
+                      // =========================
+
+                      const Text(
+                        'Profil Desa',
+                        style: TextStyle(
+                          fontSize: 30,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.primary,
                         ),
-                        const SizedBox(height: 18),
+                      ),
 
-                        _textField(
-                          label: 'Nama Desa',
-                          hint: 'Masukkan nama desa',
-                          controller: _namaDesaController,
-                          required: true,
+                      const SizedBox(height: 8),
+
+                      const Text(
+                        'Kelola informasi profil dan gambaran umum desa.',
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: Colors.black54,
                         ),
-                        const SizedBox(height: 15),
+                      ),
 
-                        _textField(
-                          label: 'Kecamatan',
-                          hint: 'Masukkan nama kecamatan',
-                          controller: _kecamatanController,
+                      const SizedBox(height: 30),
+
+                      // =========================
+                      // INFORMASI DASAR
+                      // =========================
+
+                      _sectionCard(
+                        title: 'Informasi Dasar Desa',
+                        icon: Icons.account_balance_outlined,
+                        child: Column(
+                          children: [
+                            _textField(
+                              controller:
+                                  _namaDesaController,
+                              label: 'Nama Desa',
+                              hint: 'Masukkan nama desa',
+                              icon: Icons.home_outlined,
+                            ),
+
+                            const SizedBox(height: 18),
+
+                            _textField(
+                              controller:
+                                  _kecamatanController,
+                              label: 'Kecamatan',
+                              hint:
+                                  'Masukkan nama kecamatan',
+                              icon:
+                                  Icons.location_city_outlined,
+                            ),
+
+                            const SizedBox(height: 18),
+
+                            _textField(
+                              controller:
+                                  _kabupatenController,
+                              label: 'Kabupaten',
+                              hint:
+                                  'Masukkan nama kabupaten',
+                              icon: Icons.map_outlined,
+                            ),
+
+                            const SizedBox(height: 18),
+
+                            _textField(
+                              controller:
+                                  _provinsiController,
+                              label: 'Provinsi',
+                              hint:
+                                  'Masukkan nama provinsi',
+                              icon: Icons.public_outlined,
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 15),
+                      ),
 
-                        _textField(
-                          label: 'Kabupaten',
-                          hint: 'Masukkan nama kabupaten',
-                          controller: _kabupatenController,
-                        ),
-                        const SizedBox(height: 15),
+                      const SizedBox(height: 25),
 
-                        _textField(
-                          label: 'Provinsi',
-                          hint: 'Masukkan nama provinsi',
-                          controller: _provinsiController,
-                        ),
+                      // =========================
+                      // SEJARAH
+                      // =========================
 
-                        const SizedBox(height: 35),
-
-                        const Text(
-                          'Sejarah Desa',
-                          style: TextStyle(
-                            fontSize: 21,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.primary,
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-
-                        _textField(
-                          label: 'Sejarah',
-                          hint: 'Tuliskan sejarah desa...',
+                      _sectionCard(
+                        title: 'Sejarah Desa',
+                        icon: Icons.history_edu_outlined,
+                        child: _textField(
                           controller: _sejarahController,
-                          maxLines: 7,
+                          label: 'Sejarah Desa',
+                          hint:
+                              'Tuliskan sejarah Desa...',
+                          maxLines: 8,
                         ),
+                      ),
 
-                        const SizedBox(height: 35),
+                      const SizedBox(height: 25),
 
-                        const Text(
-                          'Visi & Misi',
-                          style: TextStyle(
-                            fontSize: 21,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.primary,
-                          ),
+                      // =========================
+                      // VISI & MISI
+                      // =========================
+
+                      _sectionCard(
+                        title: 'Visi & Misi',
+                        icon: Icons.visibility_outlined,
+                        child: Column(
+                          children: [
+                            _textField(
+                              controller: _visiController,
+                              label: 'Visi Desa',
+                              hint:
+                                  'Tuliskan visi desa...',
+                              maxLines: 5,
+                            ),
+
+                            const SizedBox(height: 18),
+
+                            _textField(
+                              controller: _misiController,
+                              label: 'Misi Desa',
+                              hint:
+                                  'Tuliskan misi desa...',
+                              maxLines: 8,
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 18),
+                      ),
 
-                        _textField(
-                          label: 'Visi',
-                          hint: 'Tuliskan visi desa...',
-                          controller: _visiController,
-                          maxLines: 5,
+                      const SizedBox(height: 25),
+
+                      // =========================
+                      // KONDISI & POTENSI
+                      // =========================
+
+                      _sectionCard(
+                        title: 'Kondisi & Potensi Desa',
+                        icon: Icons.landscape_outlined,
+                        child: Column(
+                          children: [
+                            _textField(
+                              controller:
+                                  _kondisiController,
+                              label: 'Kondisi Desa',
+                              hint:
+                                  'Tuliskan kondisi umum desa...',
+                              maxLines: 7,
+                            ),
+
+                            const SizedBox(height: 18),
+
+                            _textField(
+                              controller:
+                                  _potensiController,
+                              label: 'Potensi Desa',
+                              hint:
+                                  'Tuliskan potensi desa...',
+                              maxLines: 7,
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 15),
+                      ),
 
-                        _textField(
-                          label: 'Misi',
-                          hint: 'Tuliskan misi desa...',
-                          controller: _misiController,
-                          maxLines: 7,
+                      const SizedBox(height: 25),
+
+                      // =========================
+                      // INFO KONTAK
+                      // =========================
+
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: AppTheme.lightGreen,
+                          borderRadius:
+                              BorderRadius.circular(18),
                         ),
+                        child: const Row(
+                          crossAxisAlignment:
+                              CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              color: AppTheme.primary,
+                            ),
 
-                        const SizedBox(height: 35),
+                            SizedBox(width: 15),
 
-                        const Text(
-                          'Kondisi & Potensi Desa',
-                          style: TextStyle(
-                            fontSize: 21,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.primary,
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-
-                        _textField(
-                          label: 'Kondisi Desa',
-                          hint: 'Tuliskan kondisi desa...',
-                          controller: _kondisiController,
-                          maxLines: 7,
-                        ),
-                        const SizedBox(height: 15),
-
-                        _textField(
-                          label: 'Potensi Desa',
-                          hint: 'Tuliskan potensi desa...',
-                          controller: _potensiController,
-                          maxLines: 7,
-                        ),
-
-                        const SizedBox(height: 35),
-
-                        const Text(
-                          'Kontak Desa',
-                          style: TextStyle(
-                            fontSize: 21,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.primary,
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-
-                        _textField(
-                          label: 'Alamat Kantor Desa',
-                          hint: 'Masukkan alamat kantor desa',
-                          controller: _alamatController,
-                          maxLines: 3,
-                        ),
-                        const SizedBox(height: 15),
-
-                        _textField(
-                          label: 'Nomor Telepon',
-                          hint: 'Masukkan nomor telepon desa',
-                          controller: _teleponController,
-                        ),
-                        const SizedBox(height: 15),
-
-                        _textField(
-                          label: 'Email Desa',
-                          hint: 'Masukkan email desa',
-                          controller: _emailController,
-                        ),
-
-                        const SizedBox(height: 35),
-
-                        Container(
-                          padding: const EdgeInsets.all(18),
-                          decoration: BoxDecoration(
-                            color: AppTheme.lightGreen,
-                            borderRadius:
-                                BorderRadius.circular(15),
-                          ),
-                          child: const Row(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                            children: [
-                              Icon(
-                                Icons.info_outline,
-                                color: AppTheme.primary,
-                              ),
-                              SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  'Data yang disimpan di sini akan '
-                                  'digunakan untuk menampilkan '
-                                  'informasi desa pada website publik.',
-                                  style: TextStyle(
-                                    color: AppTheme.primary,
-                                    height: 1.5,
-                                  ),
+                            Expanded(
+                              child: Text(
+                                'Informasi alamat kantor desa, nomor telepon, '
+                                'dan email dikelola melalui menu Pengaturan.',
+                                style: TextStyle(
+                                  color: AppTheme.primary,
+                                  height: 1.5,
                                 ),
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
+                      ),
 
-                        const SizedBox(height: 25),
+                      const SizedBox(height: 30),
 
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed:
-                                _isSaving ? null : _saveProfil,
-                            icon: _isSaving
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child:
-                                        CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor:
-                                          AlwaysStoppedAnimation<
-                                              Color>(
-                                        Colors.white,
-                                      ),
-                                    ),
-                                  )
-                                : const Icon(Icons.save_outlined),
-                            label: Text(
+                      // =========================
+                      // BUTTON SIMPAN
+                      // =========================
+
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed:
                               _isSaving
-                                  ? 'Menyimpan...'
-                                  : 'Simpan Profil Desa',
-                            ),
-                            style:
-                                ElevatedButton.styleFrom(
-                              padding:
-                                  const EdgeInsets.symmetric(
-                                vertical: 18,
-                              ),
-                            ),
+                                  ? null
+                                  : _saveProfil,
+                          icon: _isSaving
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child:
+                                      CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.save_outlined,
+                                ),
+                          label: Text(
+                            _isSaving
+                                ? 'Menyimpan...'
+                                : 'Simpan Profil Desa',
                           ),
                         ),
+                      ),
 
-                        const SizedBox(height: 30),
-                      ],
-                    ),
+                      const SizedBox(height: 30),
+                    ],
                   ),
                 ),
               ),
             ),
+    );
+  }
+
+  // =========================
+  // SECTION CARD
+  // =========================
+
+  Widget _sectionCard({
+    required String title,
+    required IconData icon,
+    required Widget child,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(25),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 45,
+                height: 45,
+                decoration: BoxDecoration(
+                  color: AppTheme.lightGreen,
+                  borderRadius:
+                      BorderRadius.circular(13),
+                ),
+                child: Icon(
+                  icon,
+                  color: AppTheme.primary,
+                ),
+              ),
+
+              const SizedBox(width: 14),
+
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 25),
+
+          child,
+        ],
+      ),
+    );
+  }
+
+  // =========================
+  // TEXT FIELD
+  // =========================
+
+  Widget _textField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    IconData? icon,
+    int maxLines = 1,
+  }) {
+    return TextField(
+      controller: controller,
+      maxLines: maxLines,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+
+        prefixIcon:
+            maxLines == 1 && icon != null
+                ? Icon(icon)
+                : null,
+
+        alignLabelWithHint:
+            maxLines > 1,
+
+        border: OutlineInputBorder(
+          borderRadius:
+              BorderRadius.circular(14),
+        ),
+
+        enabledBorder:
+            OutlineInputBorder(
+          borderRadius:
+              BorderRadius.circular(14),
+          borderSide:
+              const BorderSide(
+            color: Colors.black12,
+          ),
+        ),
+
+        focusedBorder:
+            OutlineInputBorder(
+          borderRadius:
+              BorderRadius.circular(14),
+          borderSide:
+              const BorderSide(
+            color: AppTheme.primary,
+            width: 2,
+          ),
+        ),
+      ),
     );
   }
 }

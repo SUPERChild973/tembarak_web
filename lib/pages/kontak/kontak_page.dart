@@ -1,11 +1,88 @@
 import 'package:flutter/material.dart';
-import '../../config/app_theme.dart';
 
-class KontakPage extends StatelessWidget {
+import '../../config/app_theme.dart';
+import '../../services/pengaturan_service.dart';
+
+class KontakPage extends StatefulWidget {
   const KontakPage({super.key});
 
   @override
+  State<KontakPage> createState() => _KontakPageState();
+}
+
+class _KontakPageState extends State<KontakPage> {
+  final PengaturanService _pengaturanService =
+      PengaturanService();
+
+  bool _isLoading = true;
+
+  String _namaDesa = 'Desa Tembarak';
+  String _alamat = '';
+  String _telepon = '';
+  String _email = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadKontak();
+  }
+
+  Future<void> _loadKontak() async {
+    try {
+      final data =
+          await _pengaturanService.getPengaturan();
+
+      if (!mounted) return;
+
+      if (data != null) {
+        setState(() {
+          _namaDesa =
+              data['namaDesa']?.toString().trim().isNotEmpty == true
+                  ? data['namaDesa'].toString()
+                  : 'Desa Tembarak';
+
+          _alamat =
+              data['footerAlamat']?.toString() ?? '';
+
+          _telepon =
+              data['footerTelepon']?.toString() ?? '';
+
+          _email =
+              data['footerEmail']?.toString() ?? '';
+
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Gagal memuat informasi kontak: $e',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
     return SingleChildScrollView(
       child: Column(
         children: [
@@ -39,15 +116,15 @@ class KontakPage extends StatelessWidget {
           ],
         ),
       ),
-      child: const Column(
+      child: Column(
         children: [
-          Icon(
+          const Icon(
             Icons.contact_phone,
             color: Colors.white,
             size: 60,
           ),
-          SizedBox(height: 20),
-          Text(
+          const SizedBox(height: 20),
+          const Text(
             'Kontak Desa',
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -56,11 +133,11 @@ class KontakPage extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           Text(
-            'Hubungi Pemerintah Desa Tembarak',
+            'Hubungi Pemerintah $_namaDesa',
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               color: Colors.white70,
               fontSize: 16,
             ),
@@ -71,7 +148,7 @@ class KontakPage extends StatelessWidget {
   }
 
   // ============================================================
-  // CONTACT
+  // KONTAK
   // ============================================================
 
   Widget _contactSection() {
@@ -95,17 +172,23 @@ class KontakPage extends StatelessWidget {
               _contactCard(
                 icon: Icons.location_on,
                 title: 'Alamat Kantor Desa',
-                content: 'Alamat Kantor Desa Tembarak',
+                content: _alamat.isNotEmpty
+                    ? _alamat
+                    : 'Alamat belum diatur',
               ),
               _contactCard(
                 icon: Icons.phone,
                 title: 'Telepon',
-                content: 'Nomor Telepon Desa',
+                content: _telepon.isNotEmpty
+                    ? _telepon
+                    : 'Nomor telepon belum diatur',
               ),
               _contactCard(
                 icon: Icons.email,
                 title: 'Email',
-                content: 'Email Resmi Desa',
+                content: _email.isNotEmpty
+                    ? _email
+                    : 'Email belum diatur',
               ),
               _contactCard(
                 icon: Icons.access_time,
@@ -161,12 +244,11 @@ class KontakPage extends StatelessWidget {
               size: 27,
             ),
           ),
-
           const SizedBox(width: 18),
-
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
@@ -176,9 +258,7 @@ class KontakPage extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-
                 const SizedBox(height: 9),
-
                 Text(
                   content,
                   style: const TextStyle(
@@ -196,7 +276,7 @@ class KontakPage extends StatelessWidget {
   }
 
   // ============================================================
-  // SERVICE
+  // PELAYANAN
   // ============================================================
 
   Widget _serviceSection() {
@@ -220,17 +300,15 @@ class KontakPage extends StatelessWidget {
               color: AppTheme.lightGreen,
               borderRadius: BorderRadius.circular(25),
             ),
-            child: const Column(
+            child: Column(
               children: [
-                Icon(
+                const Icon(
                   Icons.support_agent,
                   color: AppTheme.primary,
                   size: 50,
                 ),
-
-                SizedBox(height: 18),
-
-                Text(
+                const SizedBox(height: 18),
+                const Text(
                   'Pelayanan Masyarakat',
                   textAlign: TextAlign.center,
                   style: TextStyle(
@@ -239,24 +317,20 @@ class KontakPage extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-
-                SizedBox(height: 12),
-
+                const SizedBox(height: 12),
                 Text(
-                  'Pemerintah Desa Tembarak berkomitmen memberikan '
+                  'Pemerintah $_namaDesa berkomitmen memberikan '
                   'pelayanan terbaik kepada seluruh masyarakat desa.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.black54,
                     fontSize: 15,
                     height: 1.7,
                   ),
                 ),
-
-                SizedBox(height: 22),
-
-                Text(
-                  'Informasi alamat, nomor telepon, email, dan jam pelayanan '
+                const SizedBox(height: 22),
+                const Text(
+                  'Informasi alamat, nomor telepon, dan email '
                   'dapat diperbarui melalui halaman admin.',
                   textAlign: TextAlign.center,
                   style: TextStyle(

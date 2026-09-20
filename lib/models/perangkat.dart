@@ -4,6 +4,7 @@ class Perangkat {
   final String jabatan;
   final String fotoUrl;
   final String keterangan;
+  final int urutan;
 
   Perangkat({
     required this.id,
@@ -11,6 +12,7 @@ class Perangkat {
     required this.jabatan,
     required this.fotoUrl,
     required this.keterangan,
+    required this.urutan,
   });
 
   factory Perangkat.fromMap(
@@ -23,6 +25,7 @@ class Perangkat {
       jabatan: data['jabatan'] ?? '',
       fotoUrl: data['fotoUrl'] ?? '',
       keterangan: data['keterangan'] ?? '',
+      urutan: data['urutan'] ?? 0,
     );
   }
 
@@ -32,6 +35,7 @@ class Perangkat {
       'jabatan': jabatan,
       'fotoUrl': fotoUrl,
       'keterangan': keterangan,
+      'urutan': urutan,
     };
   }
 }
