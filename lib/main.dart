@@ -11,7 +11,7 @@ import 'pages/profil/profil_page.dart';
 import 'pages/struktur/struktur_page.dart';
 import 'pages/peta/peta_page.dart';
 import 'pages/produk/produk_page.dart';
-import 'pages/berita/berita_page.dart';
+import 'pages/berita/berita_page.dart'; 
 import 'pages/galeri/galeri_page.dart';
 import 'pages/kontak/kontak_page.dart';
 

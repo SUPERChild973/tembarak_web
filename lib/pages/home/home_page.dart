@@ -1,8 +1,9 @@
 import 'dart:async';
+import 'dart:html' as html;
+import 'dart:ui_web' as ui_web;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:video_player/video_player.dart';
 
 import '../../config/app_theme.dart';
 import '../../models/berita.dart';
@@ -32,93 +33,47 @@ class _HomePageState extends State<HomePage> {
   final FirebaseFirestore _firestore =
       FirebaseFirestore.instance;
 
-  final ProdukService _produkService =
-      ProdukService();
-
-  final GaleriService _galeriService =
-      GaleriService();
-
-  final BeritaService _beritaService =
-      BeritaService();
+  final ProdukService _produkService = ProdukService();
+  final GaleriService _galeriService = GaleriService();
+  final BeritaService _beritaService = BeritaService();
 
   // ============================================================
-  // VIDEO PROFIL
+  // GOOGLE DRIVE VIDEO
   // ============================================================
 
-  VideoPlayerController? _videoController;
-  String _currentVideoUrl = '';
-  bool _videoLoading = false;
+  String _googleDrivePreviewUrl(String url) {
+    final value = url.trim();
 
-  @override
-  void dispose() {
-    _videoController?.dispose();
-    super.dispose();
-  }
-
-  Future<void> _loadVideo(String url) async {
-    final newUrl = url.trim();
-
-    if (newUrl.isEmpty) {
-      return;
+    if (value.isEmpty) {
+      return '';
     }
 
-    if (_videoLoading) {
-      return;
+    // Format:
+    // https://drive.google.com/file/d/FILE_ID/view?usp=sharing
+    final fileMatch = RegExp(
+      r'drive\.google\.com/file/d/([^/]+)',
+      caseSensitive: false,
+    ).firstMatch(value);
+
+    if (fileMatch != null) {
+      final fileId = fileMatch.group(1)!;
+
+      return 'https://drive.google.com/file/d/$fileId/preview';
     }
 
-    if (newUrl == _currentVideoUrl &&
-        _videoController != null &&
-        _videoController!.value.isInitialized) {
-      return;
-    }
-
-    setState(() {
-      _videoLoading = true;
-    });
-
-    final oldController = _videoController;
-
-    _videoController = null;
-    _currentVideoUrl = newUrl;
-
-    await oldController?.dispose();
-
-    VideoPlayerController? controller;
-
+    // Format:
+    // https://drive.google.com/open?id=FILE_ID
     try {
-      controller = VideoPlayerController.networkUrl(
-        Uri.parse(newUrl),
-      );
+      final uri = Uri.parse(value);
+      final id = uri.queryParameters['id'];
 
-      await controller.initialize();
-
-      await controller.setLooping(true);
-      await controller.setVolume(0);
-
-      if (!mounted) {
-        await controller.dispose();
-        return;
+      if (id != null && id.isNotEmpty) {
+        return 'https://drive.google.com/file/d/$id/preview';
       }
+    } catch (_) {}
 
-      setState(() {
-        _videoController = controller;
-        _videoLoading = false;
-      });
-    } catch (e) {
-      debugPrint('Gagal memuat video profil: $e');
-
-      await controller?.dispose();
-
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        _videoController = null;
-        _videoLoading = false;
-        _currentVideoUrl = '';
-      });
-    }
+    // Jika sudah berupa /preview
+    return value;
   }
 
   // ============================================================
@@ -127,6 +82,10 @@ class _HomePageState extends State<HomePage> {
 
   Stream<DocumentSnapshot<Map<String, dynamic>>>
       _getHomeSettings() {
+    // PENTING:
+    // PengaturanService menyimpan data pada:
+    // pengaturan/website
+
     return _firestore
         .collection('pengaturan')
         .doc('website')
@@ -134,12 +93,13 @@ class _HomePageState extends State<HomePage> {
   }
 
   Map<String, dynamic> _settingsData(
-    AsyncSnapshot<
-            DocumentSnapshot<Map<String, dynamic>>>
-        snapshot,
+    AsyncSnapshot<DocumentSnapshot<Map<String, dynamic>>> snapshot,
   ) {
-    if (!snapshot.hasData ||
-        !snapshot.data!.exists) {
+    if (!snapshot.hasData) {
+      return {};
+    }
+
+    if (!snapshot.data!.exists) {
       return {};
     }
 
@@ -159,7 +119,11 @@ class _HomePageState extends State<HomePage> {
 
     final text = value.toString().trim();
 
-    return text.isEmpty ? fallback : text;
+    if (text.isEmpty) {
+      return fallback;
+    }
+
+    return text;
   }
 
   List<String> _slidesSetting(
@@ -169,7 +133,7 @@ class _HomePageState extends State<HomePage> {
 
     if (value is List) {
       return value
-          .map((e) => e.toString())
+          .map((e) => e.toString().trim())
           .where((e) => e.isNotEmpty)
           .toList();
     }
@@ -192,27 +156,28 @@ class _HomePageState extends State<HomePage> {
         return SingleChildScrollView(
           child: Column(
             children: [
-              // 7. SLIDE GAMBAR
+              // HERO / SLIDE
               _heroSection(context, data),
 
+              // MENU CEPAT
               _quickMenu(context),
 
               // VIDEO PROFIL
               _welcomeSection(context, data),
 
-              // 6. DATA SINGKAT
+              // DATA SINGKAT
               _statisticsSection(context, data),
 
-              // 8. PRODUK UNGGULAN
+              // PRODUK
               _productsSection(context),
 
               // BERITA
               _newsSection(context),
 
-              // 9. KEGIATAN / GALERI
+              // GALERI
               _activitySection(context),
 
-              // 11. INFORMASI BAWAH
+              // KONTAK
               _contactSection(context, data),
             ],
           ),
@@ -222,16 +187,14 @@ class _HomePageState extends State<HomePage> {
   }
 
   // ============================================================
-  // 7. HERO / SLIDE GAMBAR
+  // HERO SECTION
   // ============================================================
 
   Widget _heroSection(
     BuildContext context,
     Map<String, dynamic> data,
   ) {
-    final width =
-        MediaQuery.of(context).size.width;
-
+    final width = MediaQuery.of(context).size.width;
     final isMobile = width < 700;
 
     final slides = _slidesSetting(data);
@@ -255,7 +218,6 @@ class _HomePageState extends State<HomePage> {
       '',
     );
 
-    // Jika belum ada gambar slide
     if (slides.isEmpty) {
       return _heroDefault(
         context,
@@ -281,9 +243,7 @@ class _HomePageState extends State<HomePage> {
     String description,
     String logoUrl,
   ) {
-    final width =
-        MediaQuery.of(context).size.width;
-
+    final width = MediaQuery.of(context).size.width;
     final isMobile = width < 700;
 
     return Container(
@@ -305,30 +265,25 @@ class _HomePageState extends State<HomePage> {
       ),
       child: Center(
         child: ConstrainedBox(
-          constraints:
-              const BoxConstraints(
+          constraints: const BoxConstraints(
             maxWidth: 1200,
           ),
           child: Flex(
-            direction: isMobile
-                ? Axis.vertical
-                : Axis.horizontal,
+            direction:
+                isMobile ? Axis.vertical : Axis.horizontal,
             crossAxisAlignment:
                 CrossAxisAlignment.center,
             children: [
               Expanded(
                 flex: isMobile ? 0 : 6,
                 child: Column(
-                  crossAxisAlignment:
-                      isMobile
-                          ? CrossAxisAlignment.center
-                          : CrossAxisAlignment.start,
+                  crossAxisAlignment: isMobile
+                      ? CrossAxisAlignment.center
+                      : CrossAxisAlignment.start,
                   children: [
                     _websiteBadge(),
 
-                    const SizedBox(
-                      height: 22,
-                    ),
+                    const SizedBox(height: 22),
 
                     Text(
                       title,
@@ -337,17 +292,13 @@ class _HomePageState extends State<HomePage> {
                           : TextAlign.left,
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize:
-                            isMobile ? 36 : 50,
-                        fontWeight:
-                            FontWeight.bold,
+                        fontSize: isMobile ? 36 : 50,
+                        fontWeight: FontWeight.bold,
                         height: 1.15,
                       ),
                     ),
 
-                    const SizedBox(
-                      height: 20,
-                    ),
+                    const SizedBox(height: 20),
 
                     Text(
                       description,
@@ -355,20 +306,15 @@ class _HomePageState extends State<HomePage> {
                           ? TextAlign.center
                           : TextAlign.left,
                       style: TextStyle(
-                        color: Colors.white
-                            .withOpacity(0.85),
+                        color: Colors.white.withOpacity(0.85),
                         fontSize: 17,
                         height: 1.6,
                       ),
                     ),
 
-                    const SizedBox(
-                      height: 32,
-                    ),
+                    const SizedBox(height: 32),
 
-                    _heroButtons(
-                      isMobile,
-                    ),
+                    _heroButtons(isMobile),
                   ],
                 ),
               ),
@@ -395,16 +341,13 @@ class _HomePageState extends State<HomePage> {
 
   Widget _websiteBadge() {
     return Container(
-      padding:
-          const EdgeInsets.symmetric(
+      padding: const EdgeInsets.symmetric(
         horizontal: 16,
         vertical: 8,
       ),
       decoration: BoxDecoration(
-        color:
-            Colors.white.withOpacity(0.12),
-        borderRadius:
-            BorderRadius.circular(30),
+        color: Colors.white.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(30),
       ),
       child: const Text(
         'WEBSITE RESMI DESA',
@@ -430,20 +373,12 @@ class _HomePageState extends State<HomePage> {
           onPressed: () {
             widget.onNavigate('profil');
           },
-          icon: const Icon(
-            Icons.explore,
-          ),
-          label: const Text(
-            'Jelajahi Desa',
-          ),
-          style:
-              ElevatedButton.styleFrom(
-            backgroundColor:
-                Colors.white,
-            foregroundColor:
-                AppTheme.primary,
-            padding:
-                const EdgeInsets.symmetric(
+          icon: const Icon(Icons.explore),
+          label: const Text('Jelajahi Desa'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: AppTheme.primary,
+            padding: const EdgeInsets.symmetric(
               horizontal: 24,
               vertical: 16,
             ),
@@ -454,21 +389,14 @@ class _HomePageState extends State<HomePage> {
           onPressed: () {
             widget.onNavigate('produk');
           },
-          icon: const Icon(
-            Icons.storefront,
-          ),
-          label: const Text(
-            'Produk Desa',
-          ),
-          style:
-              OutlinedButton.styleFrom(
-            foregroundColor:
-                Colors.white,
+          icon: const Icon(Icons.storefront),
+          label: const Text('Produk Desa'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Colors.white,
             side: const BorderSide(
               color: Colors.white,
             ),
-            padding:
-                const EdgeInsets.symmetric(
+            padding: const EdgeInsets.symmetric(
               horizontal: 24,
               vertical: 16,
             ),
@@ -486,12 +414,10 @@ class _HomePageState extends State<HomePage> {
       width: isMobile ? 190 : 300,
       height: isMobile ? 190 : 300,
       decoration: BoxDecoration(
-        color:
-            Colors.white.withOpacity(0.10),
+        color: Colors.white.withOpacity(0.10),
         shape: BoxShape.circle,
         border: Border.all(
-          color:
-              Colors.white.withOpacity(0.25),
+          color: Colors.white.withOpacity(0.25),
           width: 2,
         ),
       ),
@@ -499,38 +425,27 @@ class _HomePageState extends State<HomePage> {
         child: Container(
           width: isMobile ? 135 : 210,
           height: isMobile ? 135 : 210,
-          padding:
-              const EdgeInsets.all(15),
-          decoration:
-              const BoxDecoration(
+          padding: const EdgeInsets.all(15),
+          decoration: const BoxDecoration(
             color: Colors.white,
             shape: BoxShape.circle,
           ),
           child: logoUrl.isEmpty
               ? Icon(
                   Icons.account_balance,
-                  size:
-                      isMobile ? 65 : 95,
-                  color:
-                      AppTheme.primary,
+                  size: isMobile ? 65 : 95,
+                  color: AppTheme.primary,
                 )
               : ClipOval(
                   child: Image.network(
                     logoUrl,
                     fit: BoxFit.contain,
                     errorBuilder:
-                        (
-                      context,
-                      error,
-                      stackTrace,
-                    ) {
+                        (context, error, stackTrace) {
                       return Icon(
                         Icons.account_balance,
-                        size: isMobile
-                            ? 65
-                            : 95,
-                        color:
-                            AppTheme.primary,
+                        size: isMobile ? 65 : 95,
+                        color: AppTheme.primary,
                       );
                     },
                   ),
@@ -549,53 +464,42 @@ class _HomePageState extends State<HomePage> {
   ) {
     return Container(
       color: Colors.white,
-      padding:
-          const EdgeInsets.symmetric(
+      padding: const EdgeInsets.symmetric(
         horizontal: 25,
         vertical: 35,
       ),
       child: Center(
         child: ConstrainedBox(
-          constraints:
-              const BoxConstraints(
+          constraints: const BoxConstraints(
             maxWidth: 1100,
           ),
           child: Wrap(
             spacing: 18,
             runSpacing: 18,
-            alignment:
-                WrapAlignment.center,
+            alignment: WrapAlignment.center,
             children: [
               _quickCard(
-                icon:
-                    Icons.info_outline,
+                icon: Icons.info_outline,
                 title: 'Profil Desa',
-                description:
-                    'Mengenal Desa Tembarak',
+                description: 'Mengenal Desa Tembarak',
                 page: 'profil',
               ),
               _quickCard(
-                icon:
-                    Icons.people_outline,
+                icon: Icons.people_outline,
                 title: 'Pemerintahan',
-                description:
-                    'Struktur organisasi desa',
+                description: 'Struktur organisasi desa',
                 page: 'struktur',
               ),
               _quickCard(
-                icon:
-                    Icons.storefront_outlined,
+                icon: Icons.storefront_outlined,
                 title: 'Produk Desa',
-                description:
-                    'Potensi UMKM desa',
+                description: 'Potensi UMKM desa',
                 page: 'produk',
               ),
               _quickCard(
-                icon:
-                    Icons.article_outlined,
+                icon: Icons.article_outlined,
                 title: 'Berita',
-                description:
-                    'Informasi terbaru desa',
+                description: 'Informasi terbaru desa',
                 page: 'berita',
               ),
             ],
@@ -615,19 +519,15 @@ class _HomePageState extends State<HomePage> {
       onTap: () {
         widget.onNavigate(page);
       },
-      borderRadius:
-          BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(18),
       child: Container(
         width: 245,
-        padding:
-            const EdgeInsets.all(22),
+        padding: const EdgeInsets.all(22),
         decoration: BoxDecoration(
           color: AppTheme.lightGreen,
-          borderRadius:
-              BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: AppTheme.primary
-                .withOpacity(0.08),
+            color: AppTheme.primary.withOpacity(0.08),
           ),
         ),
         child: Row(
@@ -635,22 +535,18 @@ class _HomePageState extends State<HomePage> {
             Container(
               width: 52,
               height: 52,
-              decoration:
-                  const BoxDecoration(
+              decoration: const BoxDecoration(
                 color: Colors.white,
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 icon,
-                color:
-                    AppTheme.primary,
+                color: AppTheme.primary,
                 size: 27,
               ),
             ),
 
-            const SizedBox(
-              width: 14,
-            ),
+            const SizedBox(width: 14),
 
             Expanded(
               child: Column(
@@ -659,24 +555,19 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   Text(
                     title,
-                    style:
-                        const TextStyle(
-                      color:
-                          AppTheme.primary,
-                      fontWeight:
-                          FontWeight.bold,
+                    style: const TextStyle(
+                      color: AppTheme.primary,
+                      fontWeight: FontWeight.bold,
                       fontSize: 15,
                     ),
                   ),
-                  const SizedBox(
-                    height: 5,
-                  ),
+
+                  const SizedBox(height: 5),
+
                   Text(
                     description,
-                    style:
-                        const TextStyle(
-                      color:
-                          Colors.black54,
+                    style: const TextStyle(
+                      color: Colors.black54,
                       fontSize: 12,
                     ),
                   ),
@@ -690,7 +581,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   // ============================================================
-  // VIDEO PROFIL
+  // VIDEO PROFIL GOOGLE DRIVE
   // ============================================================
 
   Widget _welcomeSection(
@@ -700,8 +591,6 @@ class _HomePageState extends State<HomePage> {
     final width = MediaQuery.of(context).size.width;
     final isMobile = width < 700;
 
-    // Field disesuaikan dengan PengaturanService:
-    // videoUrl dan videoJudul.
     final videoUrl = _stringSetting(
       data,
       'videoUrl',
@@ -713,13 +602,6 @@ class _HomePageState extends State<HomePage> {
       'videoJudul',
       'Mengenal lebih dekat Desa Tembarak',
     );
-
-    if (videoUrl.isNotEmpty &&
-        videoUrl != _currentVideoUrl) {
-      Future.microtask(
-        () => _loadVideo(videoUrl),
-      );
-    }
 
     return Container(
       width: double.infinity,
@@ -734,13 +616,7 @@ class _HomePageState extends State<HomePage> {
             maxWidth: 1100,
           ),
           child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.center,
             children: [
-              // ==================================================
-              // VIDEO
-              // ==================================================
-
               _videoContainer(
                 videoUrl,
                 isMobile: isMobile,
@@ -750,10 +626,6 @@ class _HomePageState extends State<HomePage> {
                 height: isMobile ? 28 : 35,
               ),
 
-              // ==================================================
-              // JUDUL
-              // ==================================================
-
               Text(
                 'Video Profil Desa',
                 textAlign: TextAlign.center,
@@ -761,17 +633,12 @@ class _HomePageState extends State<HomePage> {
                   color: AppTheme.primary,
                   fontSize: isMobile ? 28 : 30,
                   fontWeight: FontWeight.bold,
-                  height: 1.2,
                 ),
               ),
 
               SizedBox(
                 height: isMobile ? 10 : 12,
               ),
-
-              // ==================================================
-              // JUDUL VIDEO DARI PENGATURAN
-              // ==================================================
 
               Text(
                 videoJudul,
@@ -780,17 +647,12 @@ class _HomePageState extends State<HomePage> {
                   color: Colors.black87,
                   fontSize: isMobile ? 16 : 17,
                   fontWeight: FontWeight.w600,
-                  height: 1.4,
                 ),
               ),
 
               SizedBox(
                 height: isMobile ? 12 : 15,
               ),
-
-              // ==================================================
-              // DESKRIPSI
-              // ==================================================
 
               ConstrainedBox(
                 constraints: BoxConstraints(
@@ -812,10 +674,6 @@ class _HomePageState extends State<HomePage> {
               SizedBox(
                 height: isMobile ? 22 : 25,
               ),
-
-              // ==================================================
-              // TOMBOL
-              // ==================================================
 
               ElevatedButton.icon(
                 onPressed: () {
@@ -850,11 +708,7 @@ class _HomePageState extends State<HomePage> {
     String videoUrl, {
     required bool isMobile,
   }) {
-    // ==========================================================
-    // VIDEO BELUM TERSEDIA
-    // ==========================================================
-
-    if (videoUrl.isEmpty) {
+    if (videoUrl.trim().isEmpty) {
       return Container(
         width: double.infinity,
         constraints: BoxConstraints(
@@ -866,17 +720,22 @@ class _HomePageState extends State<HomePage> {
             decoration: BoxDecoration(
               color: AppTheme.lightGreen,
               borderRadius:
-                  BorderRadius.circular(isMobile ? 18 : 20),
+                  BorderRadius.circular(
+                isMobile ? 18 : 20,
+              ),
             ),
             child: const Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisAlignment:
+                  MainAxisAlignment.center,
               children: [
                 Icon(
                   Icons.video_library_outlined,
                   size: 55,
                   color: AppTheme.primary,
                 ),
+
                 SizedBox(height: 12),
+
                 Text(
                   'Video profil belum tersedia',
                   textAlign: TextAlign.center,
@@ -886,9 +745,12 @@ class _HomePageState extends State<HomePage> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+
                 SizedBox(height: 6),
+
                 Padding(
-                  padding: EdgeInsets.symmetric(
+                  padding:
+                      EdgeInsets.symmetric(
                     horizontal: 20,
                   ),
                   child: Text(
@@ -907,41 +769,8 @@ class _HomePageState extends State<HomePage> {
       );
     }
 
-    // ==========================================================
-    // VIDEO SEDANG DIMUAT
-    // ==========================================================
-
-    if (_videoLoading ||
-        _videoController == null ||
-        !_videoController!.value.isInitialized) {
-      return Container(
-        width: double.infinity,
-        constraints: BoxConstraints(
-          maxWidth: isMobile ? 500 : 1000,
-        ),
-        child: AspectRatio(
-          aspectRatio: 16 / 9,
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.black12,
-              borderRadius:
-                  BorderRadius.circular(isMobile ? 18 : 20),
-            ),
-            child: const Center(
-              child: CircularProgressIndicator(
-                color: AppTheme.primary,
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    final controller = _videoController!;
-
-    // ==========================================================
-    // VIDEO SIAP
-    // ==========================================================
+    final previewUrl =
+        _googleDrivePreviewUrl(videoUrl);
 
     return Container(
       width: double.infinity,
@@ -951,7 +780,9 @@ class _HomePageState extends State<HomePage> {
       decoration: BoxDecoration(
         color: Colors.black,
         borderRadius:
-            BorderRadius.circular(isMobile ? 18 : 20),
+            BorderRadius.circular(
+          isMobile ? 18 : 20,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.08),
@@ -962,199 +793,68 @@ class _HomePageState extends State<HomePage> {
       ),
       clipBehavior: Clip.antiAlias,
       child: AspectRatio(
-        // Tetap 16:9 agar proporsional di HP.
         aspectRatio: 16 / 9,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            // ==================================================
-            // VIDEO PLAYER
-            // ==================================================
-
-            Positioned.fill(
-              child: FittedBox(
-                fit: BoxFit.cover,
-                child: SizedBox(
-                  width: controller.value.size.width,
-                  height: controller.value.size.height,
-                  child: VideoPlayer(controller),
-                ),
-              ),
-            ),
-
-            // ==================================================
-            // GRADIENT BAWAH
-            // ==================================================
-
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: Container(
-                height: isMobile ? 60 : 75,
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Colors.black54,
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            // ==================================================
-            // PLAY BESAR
-            // ==================================================
-
-            if (!controller.value.isPlaying)
-            Center(
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    setState(() {
-                      controller.play();
-                    });
-                  },
-                  borderRadius: BorderRadius.circular(18),
-                  child: Container(
-                    width: isMobile ? 60 : 70,
-                    height: isMobile ? 60 : 70,
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.65),
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: Icon(
-                      Icons.play_arrow,
-                      color: Colors.white,
-                      size: isMobile ? 35 : 42,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            // ==================================================
-            // KONTROL VIDEO
-            // ==================================================
-
-            Positioned(
-              left: isMobile ? 6 : 10,
-              right: isMobile ? 6 : 10,
-              bottom: 2,
-              child: Row(
-                children: [
-                  IconButton(
-                    tooltip: 'Putar / Jeda',
-                    padding: EdgeInsets.zero,
-                    onPressed: () {
-                      setState(() {
-                        if (controller.value.isPlaying) {
-                          controller.pause();
-                        } else {
-                          controller.play();
-                        }
-                      });
-                    },
-                    icon: Icon(
-                      controller.value.isPlaying
-                          ? Icons.pause
-                          : Icons.play_arrow,
-                      color: Colors.white,
-                      size: isMobile ? 28 : 32,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: VideoProgressIndicator(
-                      controller,
-                      allowScrubbing: true,
-                      colors: const VideoProgressColors(
-                        playedColor: AppTheme.primary,
-                        bufferedColor: Colors.white54,
-                        backgroundColor: Colors.white24,
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 10,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // ==================================================
-            // FULLSCREEN
-            // ==================================================
-
-            Positioned(
-              top: 8,
-              right: 8,
-              child: IconButton(
-                tooltip: 'Layar penuh',
-                onPressed: () {
-                  // Fungsi fullscreen dapat ditambahkan di sini.
-                },
-                icon: Icon(
-                  Icons.fullscreen_outlined,
-                  color: Colors.white,
-                  size: isMobile ? 27 : 30,
-                ),
-              ),
-            ),
-          ],
+        child: _GoogleDriveVideo(
+          url: previewUrl,
         ),
       ),
     );
   }
 
   // ============================================================
-  // 6. DATA SINGKAT
+  // DATA SINGKAT
   // ============================================================
 
   Widget _statisticsSection(
     BuildContext context,
     Map<String, dynamic> data,
   ) {
+    // ==========================================================
+    // PENTING
+    //
+    // Nama field HARUS sama dengan PengaturanService:
+    //
+    // jumlahPenduduk
+    // jumlahKeluarga
+    // jumlahDusun
+    // jumlahRtRw
+    //
+    // ==========================================================
+
     final penduduk = _stringSetting(
       data,
-      'statPenduduk',
+      'jumlahPenduduk',
       '—',
     );
 
-    final kepalaKeluarga =
-        _stringSetting(
+    final kepalaKeluarga = _stringSetting(
       data,
-      'statKepalaKeluarga',
+      'jumlahKeluarga',
       '—',
     );
 
     final dusun = _stringSetting(
       data,
-      'statDusun',
+      'jumlahDusun',
       '—',
     );
 
     final rtRw = _stringSetting(
       data,
-      'statRtRw',
+      'jumlahRtRw',
       '—',
     );
 
     return Container(
-      padding:
-          const EdgeInsets.symmetric(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
         horizontal: 25,
         vertical: 55,
       ),
       color: Colors.white,
       child: Center(
         child: ConstrainedBox(
-          constraints:
-              const BoxConstraints(
+          constraints: const BoxConstraints(
             maxWidth: 1000,
           ),
           child: Column(
@@ -1165,8 +865,7 @@ class _HomePageState extends State<HomePage> {
                 style: TextStyle(
                   color: AppTheme.primary,
                   fontSize: 30,
-                  fontWeight:
-                      FontWeight.bold,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
 
@@ -1186,24 +885,26 @@ class _HomePageState extends State<HomePage> {
               Wrap(
                 spacing: 20,
                 runSpacing: 20,
-                alignment:
-                    WrapAlignment.center,
+                alignment: WrapAlignment.center,
                 children: [
                   _statCard(
                     Icons.people,
                     'Penduduk',
                     penduduk,
                   ),
+
                   _statCard(
                     Icons.home_work,
                     'Kepala Keluarga',
                     kepalaKeluarga,
                   ),
+
                   _statCard(
                     Icons.location_city,
                     'Dusun',
                     dusun,
                   ),
+
                   _statCard(
                     Icons.groups,
                     'RT / RW',
@@ -1225,15 +926,13 @@ class _HomePageState extends State<HomePage> {
   ) {
     return Container(
       width: 210,
-      padding:
-          const EdgeInsets.symmetric(
+      padding: const EdgeInsets.symmetric(
         horizontal: 20,
         vertical: 25,
       ),
       decoration: BoxDecoration(
         color: AppTheme.background,
-        borderRadius:
-            BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
         children: [
@@ -1242,18 +941,21 @@ class _HomePageState extends State<HomePage> {
             size: 40,
             color: AppTheme.primary,
           ),
+
           const SizedBox(height: 12),
+
           Text(
             value,
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: AppTheme.primary,
               fontSize: 28,
-              fontWeight:
-                  FontWeight.bold,
+              fontWeight: FontWeight.bold,
             ),
           ),
+
           const SizedBox(height: 5),
+
           Text(
             title,
             textAlign: TextAlign.center,
@@ -1268,7 +970,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   // ============================================================
-  // 8. PRODUK UNGGULAN
+  // PRODUK UNGGULAN
   // ============================================================
 
   Widget _productsSection(
@@ -1276,15 +978,13 @@ class _HomePageState extends State<HomePage> {
   ) {
     return Container(
       color: AppTheme.background,
-      padding:
-          const EdgeInsets.symmetric(
+      padding: const EdgeInsets.symmetric(
         horizontal: 25,
         vertical: 65,
       ),
       child: Center(
         child: ConstrainedBox(
-          constraints:
-              const BoxConstraints(
+          constraints: const BoxConstraints(
             maxWidth: 1100,
           ),
           child: Column(
@@ -1295,8 +995,7 @@ class _HomePageState extends State<HomePage> {
                 style: TextStyle(
                   color: AppTheme.primary,
                   fontSize: 30,
-                  fontWeight:
-                      FontWeight.bold,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
 
@@ -1314,20 +1013,12 @@ class _HomePageState extends State<HomePage> {
               const SizedBox(height: 35),
 
               StreamBuilder<List<Produk>>(
-                stream:
-                    _produkService
-                        .getProduk(),
-                builder:
-                    (context, snapshot) {
-                  if (snapshot
-                          .connectionState ==
-                      ConnectionState
-                          .waiting) {
+                stream: _produkService.getProduk(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState ==
+                      ConnectionState.waiting) {
                     return const Padding(
-                      padding:
-                          EdgeInsets.all(
-                        30,
-                      ),
+                      padding: EdgeInsets.all(30),
                       child: Center(
                         child:
                             CircularProgressIndicator(),
@@ -1351,9 +1042,8 @@ class _HomePageState extends State<HomePage> {
                     );
                   }
 
-                  final data = produk
-                      .take(6)
-                      .toList();
+                  final data =
+                      produk.take(6).toList();
 
                   return Wrap(
                     spacing: 20,
@@ -1363,9 +1053,7 @@ class _HomePageState extends State<HomePage> {
                     children: data
                         .map(
                           (item) =>
-                              _productCard(
-                            item,
-                          ),
+                              _productCard(item),
                         )
                         .toList(),
                   );
@@ -1376,9 +1064,7 @@ class _HomePageState extends State<HomePage> {
 
               OutlinedButton(
                 onPressed: () {
-                  widget.onNavigate(
-                    'produk',
-                  );
+                  widget.onNavigate('produk');
                 },
                 child: const Text(
                   'Lihat Semua Produk',
@@ -1402,11 +1088,9 @@ class _HomePageState extends State<HomePage> {
             BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black
-                .withOpacity(0.05),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 15,
-            offset:
-                const Offset(0, 5),
+            offset: const Offset(0, 5),
           ),
         ],
       ),
@@ -1416,28 +1100,22 @@ class _HomePageState extends State<HomePage> {
         children: [
           ClipRRect(
             borderRadius:
-                const BorderRadius
-                    .vertical(
+                const BorderRadius.vertical(
               top: Radius.circular(20),
             ),
             child: SizedBox(
               width: double.infinity,
               height: 180,
-              child:
-                  produk.fotoUrl.isEmpty
-                      ? _productPlaceholder()
-                      : Image.network(
-                          produk.fotoUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder:
-                              (
-                            context,
-                            error,
-                            stackTrace,
-                          ) {
-                            return _productPlaceholder();
-                          },
-                        ),
+              child: produk.fotoUrl.isEmpty
+                  ? _productPlaceholder()
+                  : Image.network(
+                      produk.fotoUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder:
+                          (context, error, stackTrace) {
+                        return _productPlaceholder();
+                      },
+                    ),
             ),
           ),
 
@@ -1463,19 +1141,16 @@ class _HomePageState extends State<HomePage> {
 
                 if (produk.pemilik
                     .isNotEmpty) ...[
-                  const SizedBox(
-                    height: 7,
-                  ),
+                  const SizedBox(height: 7),
+
                   Text(
                     produk.pemilik,
                     maxLines: 1,
                     overflow:
-                        TextOverflow
-                            .ellipsis,
+                        TextOverflow.ellipsis,
                     style:
                         const TextStyle(
-                      color:
-                          Colors.black54,
+                      color: Colors.black54,
                       fontSize: 13,
                     ),
                   ),
@@ -1483,19 +1158,16 @@ class _HomePageState extends State<HomePage> {
 
                 if (produk.deskripsi
                     .isNotEmpty) ...[
-                  const SizedBox(
-                    height: 8,
-                  ),
+                  const SizedBox(height: 8),
+
                   Text(
                     produk.deskripsi,
                     maxLines: 2,
                     overflow:
-                        TextOverflow
-                            .ellipsis,
+                        TextOverflow.ellipsis,
                     style:
                         const TextStyle(
-                      color:
-                          Colors.black54,
+                      color: Colors.black54,
                       fontSize: 13,
                       height: 1.4,
                     ),
@@ -1531,15 +1203,13 @@ class _HomePageState extends State<HomePage> {
   ) {
     return Container(
       color: Colors.white,
-      padding:
-          const EdgeInsets.symmetric(
+      padding: const EdgeInsets.symmetric(
         horizontal: 25,
         vertical: 65,
       ),
       child: Center(
         child: ConstrainedBox(
-          constraints:
-              const BoxConstraints(
+          constraints: const BoxConstraints(
             maxWidth: 1100,
           ),
           child: Column(
@@ -1550,8 +1220,7 @@ class _HomePageState extends State<HomePage> {
                 style: TextStyle(
                   color: AppTheme.primary,
                   fontSize: 30,
-                  fontWeight:
-                      FontWeight.bold,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
 
@@ -1569,20 +1238,12 @@ class _HomePageState extends State<HomePage> {
               const SizedBox(height: 35),
 
               StreamBuilder<List<Berita>>(
-                stream:
-                    _beritaService
-                        .getBerita(),
-                builder:
-                    (context, snapshot) {
-                  if (snapshot
-                          .connectionState ==
-                      ConnectionState
-                          .waiting) {
+                stream: _beritaService.getBerita(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState ==
+                      ConnectionState.waiting) {
                     return const Padding(
-                      padding:
-                          EdgeInsets.all(
-                        30,
-                      ),
+                      padding: EdgeInsets.all(30),
                       child: Center(
                         child:
                             CircularProgressIndicator(),
@@ -1606,9 +1267,8 @@ class _HomePageState extends State<HomePage> {
                     );
                   }
 
-                  final data = berita
-                      .take(3)
-                      .toList();
+                  final data =
+                      berita.take(3).toList();
 
                   return Wrap(
                     spacing: 20,
@@ -1632,9 +1292,7 @@ class _HomePageState extends State<HomePage> {
 
               OutlinedButton(
                 onPressed: () {
-                  widget.onNavigate(
-                    'berita',
-                  );
+                  widget.onNavigate('berita');
                 },
                 child: const Text(
                   'Lihat Semua Berita',
@@ -1653,53 +1311,43 @@ class _HomePageState extends State<HomePage> {
   ) {
     return Container(
       width: 320,
-      padding:
-          const EdgeInsets.all(22),
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         color: AppTheme.background,
         borderRadius:
             BorderRadius.circular(20),
         border: Border.all(
-          color: Colors.black
-              .withOpacity(0.05),
+          color: Colors.black.withOpacity(0.05),
         ),
       ),
       child: Column(
         crossAxisAlignment:
             CrossAxisAlignment.start,
         children: [
+          // ======================================================
+          // GAMBAR BERITA
+          // ======================================================
+
           Container(
             width: double.infinity,
-            height: 130,
+            height: 180,
             decoration: BoxDecoration(
-              color:
-                  AppTheme.lightGreen,
+              color: AppTheme.lightGreen,
               borderRadius:
-                  BorderRadius.circular(
-                15,
-              ),
+                  BorderRadius.circular(15),
             ),
-            child: const Icon(
-              Icons.article,
-              size: 55,
-              color:
-                  AppTheme.primary,
-            ),
+            clipBehavior: Clip.antiAlias,
+            child: _beritaImage(berita),
           ),
 
           const SizedBox(height: 18),
 
           Text(
-            _formatDate(
-              berita.createdAt,
-            ),
-            style:
-                const TextStyle(
-              color:
-                  AppTheme.primary,
+            _formatDate(berita.createdAt),
+            style: const TextStyle(
+              color: AppTheme.primary,
               fontSize: 12,
-              fontWeight:
-                  FontWeight.bold,
+              fontWeight: FontWeight.bold,
             ),
           ),
 
@@ -1708,13 +1356,10 @@ class _HomePageState extends State<HomePage> {
           Text(
             berita.judul,
             maxLines: 2,
-            overflow:
-                TextOverflow.ellipsis,
-            style:
-                const TextStyle(
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
               fontSize: 16,
-              fontWeight:
-                  FontWeight.bold,
+              fontWeight: FontWeight.bold,
               height: 1.4,
             ),
           ),
@@ -1724,12 +1369,9 @@ class _HomePageState extends State<HomePage> {
           Text(
             berita.ringkasan,
             maxLines: 2,
-            overflow:
-                TextOverflow.ellipsis,
-            style:
-                const TextStyle(
-              color:
-                  Colors.black54,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Colors.black54,
               fontSize: 13,
               height: 1.5,
             ),
@@ -1761,6 +1403,64 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // ============================================================
+  // GAMBAR BERITA
+  // ============================================================
+
+  Widget _beritaImage(
+    Berita berita,
+  ) {
+    /*
+      Kode ini mencoba mengambil fotoUrl dari model Berita.
+
+      Jika fotoUrl tersedia:
+      -> tampilkan gambar berita.
+
+      Jika kosong:
+      -> tampilkan placeholder.
+    */
+
+    final fotoUrl = berita.fotoUrl.trim();
+
+    if (fotoUrl.isEmpty) {
+      return _newsPlaceholder();
+    }
+
+    return Image.network(
+      fotoUrl,
+      width: double.infinity,
+      height: double.infinity,
+      fit: BoxFit.cover,
+      errorBuilder:
+          (context, error, stackTrace) {
+        return _newsPlaceholder();
+      },
+      loadingBuilder:
+          (context, child, loadingProgress) {
+        if (loadingProgress == null) {
+          return child;
+        }
+
+        return const Center(
+          child: CircularProgressIndicator(),
+        );
+      },
+    );
+  }
+
+  Widget _newsPlaceholder() {
+    return Container(
+      color: AppTheme.lightGreen,
+      child: const Center(
+        child: Icon(
+          Icons.article,
+          size: 55,
+          color: AppTheme.primary,
+        ),
+      ),
+    );
+  }
+
   String _formatDate(
     DateTime? date,
   ) {
@@ -1774,7 +1474,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   // ============================================================
-  // 9. KEGIATAN / GALERI
+  // KEGIATAN / GALERI
   // ============================================================
 
   Widget _activitySection(
@@ -1782,15 +1482,13 @@ class _HomePageState extends State<HomePage> {
   ) {
     return Container(
       color: AppTheme.background,
-      padding:
-          const EdgeInsets.symmetric(
+      padding: const EdgeInsets.symmetric(
         horizontal: 25,
         vertical: 65,
       ),
       child: Center(
         child: ConstrainedBox(
-          constraints:
-              const BoxConstraints(
+          constraints: const BoxConstraints(
             maxWidth: 1100,
           ),
           child: Column(
@@ -1801,8 +1499,7 @@ class _HomePageState extends State<HomePage> {
                 style: TextStyle(
                   color: AppTheme.primary,
                   fontSize: 30,
-                  fontWeight:
-                      FontWeight.bold,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
 
@@ -1820,20 +1517,12 @@ class _HomePageState extends State<HomePage> {
               const SizedBox(height: 35),
 
               StreamBuilder<List<Galeri>>(
-                stream:
-                    _galeriService
-                        .getGaleri(),
-                builder:
-                    (context, snapshot) {
-                  if (snapshot
-                          .connectionState ==
-                      ConnectionState
-                          .waiting) {
+                stream: _galeriService.getGaleri(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState ==
+                      ConnectionState.waiting) {
                     return const Padding(
-                      padding:
-                          EdgeInsets.all(
-                        30,
-                      ),
+                      padding: EdgeInsets.all(30),
                       child: Center(
                         child:
                             CircularProgressIndicator(),
@@ -1857,9 +1546,8 @@ class _HomePageState extends State<HomePage> {
                     );
                   }
 
-                  final data = galeri
-                      .take(6)
-                      .toList();
+                  final data =
+                      galeri.take(6).toList();
 
                   return Wrap(
                     spacing: 18,
@@ -1869,9 +1557,7 @@ class _HomePageState extends State<HomePage> {
                     children: data
                         .map(
                           (item) =>
-                              _activityCard(
-                            item,
-                          ),
+                              _activityCard(item),
                         )
                         .toList(),
                   );
@@ -1882,9 +1568,7 @@ class _HomePageState extends State<HomePage> {
 
               ElevatedButton(
                 onPressed: () {
-                  widget.onNavigate(
-                    'galeri',
-                  );
+                  widget.onNavigate('galeri');
                 },
                 child: const Text(
                   'Lihat Semua Galeri',
@@ -1909,11 +1593,9 @@ class _HomePageState extends State<HomePage> {
             BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black
-                .withOpacity(0.05),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 15,
-            offset:
-                const Offset(0, 5),
+            offset: const Offset(0, 5),
           ),
         ],
       ),
@@ -1929,11 +1611,7 @@ class _HomePageState extends State<HomePage> {
                     galeri.fotoUrl,
                     fit: BoxFit.cover,
                     errorBuilder:
-                        (
-                      context,
-                      error,
-                      stackTrace,
-                    ) {
+                        (context, error, stackTrace) {
                       return _galleryPlaceholder();
                     },
                   ),
@@ -1945,14 +1623,11 @@ class _HomePageState extends State<HomePage> {
                     LinearGradient(
                   begin:
                       Alignment.topCenter,
-                  end: Alignment
-                      .bottomCenter,
+                  end:
+                      Alignment.bottomCenter,
                   colors: [
                     Colors.transparent,
-                    Colors.black
-                        .withOpacity(
-                      0.80,
-                    ),
+                    Colors.black.withOpacity(0.80),
                   ],
                 ),
               ),
@@ -1964,41 +1639,34 @@ class _HomePageState extends State<HomePage> {
               bottom: 18,
               child: Column(
                 crossAxisAlignment:
-                    CrossAxisAlignment
-                        .start,
+                    CrossAxisAlignment.start,
                 children: [
                   Text(
                     galeri.judul,
                     maxLines: 2,
                     overflow:
-                        TextOverflow
-                            .ellipsis,
+                        TextOverflow.ellipsis,
                     style:
                         const TextStyle(
-                      color:
-                          Colors.white,
+                      color: Colors.white,
                       fontSize: 17,
-                      fontWeight:
-                          FontWeight.bold,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
 
                   if (galeri
                       .deskripsi
                       .isNotEmpty) ...[
-                    const SizedBox(
-                      height: 5,
-                    ),
+                    const SizedBox(height: 5),
+
                     Text(
                       galeri.deskripsi,
                       maxLines: 2,
                       overflow:
-                          TextOverflow
-                              .ellipsis,
+                          TextOverflow.ellipsis,
                       style:
                           const TextStyle(
-                        color:
-                            Colors.white70,
+                        color: Colors.white70,
                         fontSize: 12,
                       ),
                     ),
@@ -2031,8 +1699,7 @@ class _HomePageState extends State<HomePage> {
   ) {
     return Container(
       width: double.infinity,
-      padding:
-          const EdgeInsets.all(40),
+      padding: const EdgeInsets.all(40),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius:
@@ -2045,14 +1712,14 @@ class _HomePageState extends State<HomePage> {
             size: 60,
             color: Colors.grey,
           ),
+
           const SizedBox(height: 15),
+
           Text(
             text,
-            style:
-                const TextStyle(
+            style: const TextStyle(
               fontSize: 17,
-              fontWeight:
-                  FontWeight.bold,
+              fontWeight: FontWeight.bold,
             ),
           ),
         ],
@@ -2061,7 +1728,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   // ============================================================
-  // 11. INFORMASI BAGIAN BAWAH
+  // KONTAK / INFORMASI BAWAH
   // ============================================================
 
   Widget _contactSection(
@@ -2070,82 +1737,70 @@ class _HomePageState extends State<HomePage> {
   ) {
     final title = _stringSetting(
       data,
-      'bottomInfoTitle',
+      'footerCopyright',
       'Desa Tembarak',
     );
 
     final description = _stringSetting(
       data,
-      'bottomInfoText',
+      'footerDeskripsi',
       'Melayani masyarakat dengan sepenuh hati.',
     );
 
     final address = _stringSetting(
       data,
-      'bottomAddress',
+      'footerAlamat',
       'Alamat Kantor Desa',
     );
 
     final phone = _stringSetting(
       data,
-      'bottomPhone',
+      'footerTelepon',
       'Telepon Desa',
     );
 
     final email = _stringSetting(
       data,
-      'bottomEmail',
+      'footerEmail',
       'Email Desa',
     );
 
     return Container(
       width: double.infinity,
-      padding:
-          const EdgeInsets.symmetric(
+      padding: const EdgeInsets.symmetric(
         horizontal: 25,
         vertical: 50,
       ),
-      color:
-          const Color(0xFF0D3B13),
+      color: const Color(0xFF0D3B13),
       child: Center(
         child: ConstrainedBox(
-          constraints:
-              const BoxConstraints(
+          constraints: const BoxConstraints(
             maxWidth: 1000,
           ),
           child: Column(
             children: [
               Text(
                 title,
-                textAlign:
-                    TextAlign.center,
-                style:
-                    const TextStyle(
+                textAlign: TextAlign.center,
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 28,
-                  fontWeight:
-                      FontWeight.bold,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
 
-              const SizedBox(
-                height: 12,
-              ),
+              const SizedBox(height: 12),
 
               Text(
                 description,
-                textAlign:
-                    TextAlign.center,
-                style:
-                    const TextStyle(
+                textAlign: TextAlign.center,
+                style: const TextStyle(
                   color: Colors.white70,
                   fontSize: 15,
                 ),
               ),
 
-              const SizedBox(
-                height: 30,
-              ),
+              const SizedBox(height: 30),
 
               Wrap(
                 spacing: 30,
@@ -2157,10 +1812,12 @@ class _HomePageState extends State<HomePage> {
                     Icons.location_on,
                     address,
                   ),
+
                   _contactItem(
                     Icons.phone,
                     phone,
                   ),
+
                   _contactItem(
                     Icons.email,
                     email,
@@ -2168,25 +1825,18 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
 
-              const SizedBox(
-                height: 35,
-              ),
+              const SizedBox(height: 35),
 
               const Divider(
-                color:
-                    Colors.white24,
+                color: Colors.white24,
               ),
 
-              const SizedBox(
-                height: 20,
-              ),
+              const SizedBox(height: 20),
 
               Text(
                 '© ${DateTime.now().year} Pemerintah Desa Tembarak',
-                style:
-                    const TextStyle(
-                  color:
-                      Colors.white54,
+                style: const TextStyle(
+                  color: Colors.white54,
                   fontSize: 12,
                 ),
               ),
@@ -2202,30 +1852,97 @@ class _HomePageState extends State<HomePage> {
     String title,
   ) {
     return Row(
-      mainAxisSize:
-          MainAxisSize.min,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        const SizedBox(
-          width: 2,
-        ),
         Icon(
           icon,
           color: Colors.white,
           size: 20,
         ),
-        const SizedBox(
-          width: 8,
-        ),
+
+        const SizedBox(width: 8),
+
         Text(
           title,
-          style:
-              const TextStyle(
-            color:
-                Colors.white70,
+          style: const TextStyle(
+            color: Colors.white70,
             fontSize: 13,
           ),
         ),
       ],
+    );
+  }
+}
+
+// ============================================================
+// GOOGLE DRIVE VIDEO VIEWER
+// ============================================================
+
+class _GoogleDriveVideo extends StatefulWidget {
+  final String url;
+
+  const _GoogleDriveVideo({
+    required this.url,
+  });
+
+  @override
+  State<_GoogleDriveVideo> createState() =>
+      _GoogleDriveVideoState();
+}
+
+class _GoogleDriveVideoState
+    extends State<_GoogleDriveVideo> {
+  late final String _viewType;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _viewType =
+        'google-drive-video-'
+        '${DateTime.now().microsecondsSinceEpoch}-'
+        '${widget.url.hashCode}';
+
+    ui_web.platformViewRegistry.registerViewFactory(
+      _viewType,
+      (int viewId) {
+        final iframe = html.IFrameElement()
+          ..src = widget.url
+          ..style.border = '0'
+          ..style.width = '100%'
+          ..style.height = '100%'
+          ..style.display = 'block'
+          ..setAttribute(
+            'allowfullscreen',
+            'true',
+          )
+          ..setAttribute(
+            'allow',
+            'autoplay; fullscreen; encrypted-media; picture-in-picture',
+          );
+
+        return iframe;
+      },
+    );
+  }
+
+  @override
+  Widget build(
+    BuildContext context,
+  ) {
+    if (widget.url.isEmpty) {
+      return const Center(
+        child: Text(
+          'URL video tidak tersedia',
+          style: TextStyle(
+            color: Colors.white,
+          ),
+        ),
+      );
+    }
+
+    return HtmlElementView(
+      viewType: _viewType,
     );
   }
 }
@@ -2307,9 +2024,8 @@ class _HeroSliderState
   Widget build(
     BuildContext context,
   ) {
-    final height = widget.isMobile
-        ? 560.0
-        : 650.0;
+    final height =
+        widget.isMobile ? 560.0 : 650.0;
 
     return SizedBox(
       width: double.infinity,
@@ -2318,8 +2034,7 @@ class _HeroSliderState
         children: [
           PageView.builder(
             controller: _controller,
-            itemCount:
-                widget.slides.length,
+            itemCount: widget.slides.length,
             onPageChanged: (index) {
               setState(() {
                 _currentPage = index;
@@ -2334,21 +2049,15 @@ class _HeroSliderState
                     widget.slides[index],
                     fit: BoxFit.cover,
                     errorBuilder:
-                        (
-                      context,
-                      error,
-                      stackTrace,
-                    ) {
+                        (context, error, stackTrace) {
                       return Container(
-                        color:
-                            AppTheme.primary,
+                        color: AppTheme.primary,
                       );
                     },
                   ),
 
                   Container(
-                    color: Colors.black
-                        .withOpacity(
+                    color: Colors.black.withOpacity(
                       0.42,
                     ),
                   ),
@@ -2356,84 +2065,61 @@ class _HeroSliderState
                   Center(
                     child: Padding(
                       padding:
-                          const EdgeInsets
-                              .all(25),
+                          const EdgeInsets.all(25),
                       child: Column(
                         mainAxisAlignment:
-                            MainAxisAlignment
-                                .center,
+                            MainAxisAlignment.center,
                         children: [
                           const Text(
                             'WEBSITE RESMI DESA',
-                            style:
-                                TextStyle(
-                              color:
-                                  Colors.white,
+                            style: TextStyle(
+                              color: Colors.white,
                               fontSize: 12,
                               fontWeight:
-                                  FontWeight
-                                      .bold,
-                              letterSpacing:
-                                  2,
+                                  FontWeight.bold,
+                              letterSpacing: 2,
                             ),
                           ),
 
-                          const SizedBox(
-                            height: 20,
-                          ),
+                          const SizedBox(height: 20),
 
                           Text(
                             widget.title,
                             textAlign:
-                                TextAlign
-                                    .center,
+                                TextAlign.center,
                             style: TextStyle(
-                              color:
-                                  Colors.white,
+                              color: Colors.white,
                               fontSize:
                                   widget.isMobile
                                       ? 34
                                       : 50,
                               fontWeight:
-                                  FontWeight
-                                      .bold,
+                                  FontWeight.bold,
                               height: 1.15,
                               shadows: const [
                                 Shadow(
                                   color:
                                       Colors.black54,
-                                  blurRadius:
-                                      8,
+                                  blurRadius: 8,
                                   offset:
-                                      Offset(
-                                    2,
-                                    2,
-                                  ),
+                                      Offset(2, 2),
                                 ),
                               ],
                             ),
                           ),
 
-                          const SizedBox(
-                            height: 18,
-                          ),
+                          const SizedBox(height: 18),
 
                           Text(
                             widget.description,
                             textAlign:
-                                TextAlign
-                                    .center,
+                                TextAlign.center,
                             maxLines: 3,
                             overflow:
-                                TextOverflow
-                                    .ellipsis,
-                            style:
-                                TextStyle(
-                              color: Colors
-                                  .white
-                                  .withOpacity(
-                                0.9,
-                              ),
+                                TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white
+                                  .withOpacity(0.9),
                               fontSize:
                                   widget.isMobile
                                       ? 16
@@ -2442,75 +2128,57 @@ class _HeroSliderState
                             ),
                           ),
 
-                          const SizedBox(
-                            height: 30,
-                          ),
+                          const SizedBox(height: 30),
 
                           Wrap(
                             spacing: 12,
                             runSpacing: 12,
                             alignment:
-                                WrapAlignment
-                                    .center,
+                                WrapAlignment.center,
                             children: [
-                              ElevatedButton
-                                  .icon(
-                                onPressed:
-                                    () {
-                                  widget
-                                      .onNavigate(
+                              ElevatedButton.icon(
+                                onPressed: () {
+                                  widget.onNavigate(
                                     'profil',
                                   );
                                 },
-                                icon:
-                                    const Icon(
-                                  Icons
-                                      .explore,
+                                icon: const Icon(
+                                  Icons.explore,
                                 ),
-                                label:
-                                    const Text(
+                                label: const Text(
                                   'Jelajahi Desa',
                                 ),
                                 style:
                                     ElevatedButton
                                         .styleFrom(
                                   backgroundColor:
-                                      Colors
-                                          .white,
+                                      Colors.white,
                                   foregroundColor:
-                                      AppTheme
-                                          .primary,
+                                      AppTheme.primary,
                                 ),
                               ),
 
-                              OutlinedButton
-                                  .icon(
-                                onPressed:
-                                    () {
-                                  widget
-                                      .onNavigate(
+                              OutlinedButton.icon(
+                                onPressed: () {
+                                  widget.onNavigate(
                                     'produk',
                                   );
                                 },
-                                icon:
-                                    const Icon(
-                                  Icons
-                                      .storefront,
+                                icon: const Icon(
+                                  Icons.storefront,
                                 ),
-                                label:
-                                    const Text(
+                                label: const Text(
                                   'Produk Desa',
                                 ),
                                 style:
                                     OutlinedButton
                                         .styleFrom(
                                   foregroundColor:
-                                      Colors
-                                          .white,
+                                      Colors.white,
                                   side:
                                       const BorderSide(
-                                    color: Colors
-                                        .white,
+                                    color:
+                                        Colors.white,
                                   ),
                                 ),
                               ),
@@ -2525,7 +2193,10 @@ class _HeroSliderState
             },
           ),
 
-          // Tombol kiri
+          // ======================================================
+          // TOMBOL KIRI
+          // ======================================================
+
           if (widget.slides.length > 1)
             Positioned(
               left: 20,
@@ -2535,8 +2206,7 @@ class _HeroSliderState
                 child: _sliderButton(
                   Icons.chevron_left,
                   () {
-                    _controller
-                        .previousPage(
+                    _controller.previousPage(
                       duration:
                           const Duration(
                         milliseconds: 400,
@@ -2549,7 +2219,10 @@ class _HeroSliderState
               ),
             ),
 
-          // Tombol kanan
+          // ======================================================
+          // TOMBOL KANAN
+          // ======================================================
+
           if (widget.slides.length > 1)
             Positioned(
               right: 20,
@@ -2572,7 +2245,10 @@ class _HeroSliderState
               ),
             ),
 
-          // Indicator
+          // ======================================================
+          // INDICATOR
+          // ======================================================
+
           Positioned(
             bottom: 25,
             left: 0,
@@ -2584,8 +2260,7 @@ class _HeroSliderState
                 widget.slides.length,
                 (index) {
                   final active =
-                      index ==
-                          _currentPage;
+                      index == _currentPage;
 
                   return AnimatedContainer(
                     duration:
@@ -2596,16 +2271,14 @@ class _HeroSliderState
                         active ? 24 : 8,
                     height: 8,
                     margin:
-                        const EdgeInsets
-                            .symmetric(
+                        const EdgeInsets.symmetric(
                       horizontal: 4,
                     ),
                     decoration:
                         BoxDecoration(
                       color: Colors.white,
                       borderRadius:
-                          BorderRadius
-                              .circular(
+                          BorderRadius.circular(
                         10,
                       ),
                     ),
@@ -2624,17 +2297,13 @@ class _HeroSliderState
     VoidCallback onPressed,
   ) {
     return Material(
-      color:
-          Colors.black.withOpacity(0.35),
-      shape:
-          const CircleBorder(),
+      color: Colors.black.withOpacity(0.35),
+      shape: const CircleBorder(),
       child: InkWell(
         onTap: onPressed,
-        customBorder:
-            const CircleBorder(),
+        customBorder: const CircleBorder(),
         child: Padding(
-          padding:
-              const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(8),
           child: Icon(
             icon,
             color: Colors.white,

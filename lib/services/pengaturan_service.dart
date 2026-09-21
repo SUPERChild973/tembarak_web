@@ -1,28 +1,38 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PengaturanService {
-  final FirebaseFirestore _firestore =
-      FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Nama collection khusus untuk pengaturan website
-  final String _collection = 'pengaturan';
+  // ============================================================
+  // COLLECTION & DOCUMENT
+  // ============================================================
 
-  // Nama dokumen pengaturan utama
-  final String _document = 'website';
+  static const String collectionName = 'pengaturan';
+  static const String documentName = 'website';
 
-  /// Mengambil seluruh pengaturan website
+  // ============================================================
+  // REFERENCE
+  // ============================================================
+
+  DocumentReference<Map<String, dynamic>> get _websiteRef {
+    return _firestore
+        .collection(collectionName)
+        .doc(documentName);
+  }
+
+  // ============================================================
+  // MENGAMBIL SEMUA PENGATURAN
+  // ============================================================
+
   Future<Map<String, dynamic>?> getPengaturan() async {
     try {
-      final doc = await _firestore
-          .collection(_collection)
-          .doc(_document)
-          .get();
+      final snapshot = await _websiteRef.get();
 
-      if (!doc.exists) {
+      if (!snapshot.exists) {
         return null;
       }
 
-      return doc.data();
+      return snapshot.data();
     } catch (e) {
       throw Exception(
         'Gagal mengambil data pengaturan: $e',
@@ -30,32 +40,35 @@ class PengaturanService {
     }
   }
 
-  /// Menyimpan pengaturan website
+  // ============================================================
+  // MENYIMPAN SEMUA PENGATURAN
+  // ============================================================
+
   Future<void> savePengaturan({
-    // =========================
+    // ----------------------------------------------------------
     // INFORMASI DESA
-    // =========================
+    // ----------------------------------------------------------
     required String namaDesa,
     required String kecamatan,
     required String kabupaten,
 
-    // =========================
-    // VIDEO PROFIL DESA
-    // =========================
+    // ----------------------------------------------------------
+    // VIDEO PROFIL
+    // ----------------------------------------------------------
     required String videoJudul,
     required String videoUrl,
 
-    // =========================
+    // ----------------------------------------------------------
     // STATISTIK DESA
-    // =========================
+    // ----------------------------------------------------------
     required String jumlahPenduduk,
     required String jumlahKeluarga,
     required String jumlahDusun,
     required String jumlahRtRw,
 
-    // =========================
-    // FOOTER / INFORMASI BAWAH
-    // =========================
+    // ----------------------------------------------------------
+    // INFORMASI KONTAK / FOOTER
+    // ----------------------------------------------------------
     required String footerDeskripsi,
     required String footerAlamat,
     required String footerTelepon,
@@ -64,37 +77,62 @@ class PengaturanService {
     required String footerCopyright,
   }) async {
     try {
-      await _firestore
-          .collection(_collection)
-          .doc(_document)
-          .set(
-        {
-          // Informasi Desa
-          'namaDesa': namaDesa,
-          'kecamatan': kecamatan,
-          'kabupaten': kabupaten,
+      // Data yang akan disimpan
+      final Map<String, dynamic> data = {
+        // ======================================================
+        // INFORMASI DESA
+        // ======================================================
 
-          // Video Profil
-          'videoJudul': videoJudul,
-          'videoUrl': videoUrl,
+        'namaDesa': namaDesa,
+        'kecamatan': kecamatan,
+        'kabupaten': kabupaten,
 
-          // Statistik Desa
-          'jumlahPenduduk': jumlahPenduduk,
-          'jumlahKeluarga': jumlahKeluarga,
-          'jumlahDusun': jumlahDusun,
-          'jumlahRtRw': jumlahRtRw,
+        // ======================================================
+        // VIDEO PROFIL
+        // ======================================================
 
-          // Footer
-          'footerDeskripsi': footerDeskripsi,
-          'footerAlamat': footerAlamat,
-          'footerTelepon': footerTelepon,
-          'footerEmail': footerEmail,
-          'footerJamOperasional': footerJamOperasional,
-          'footerCopyright': footerCopyright,
+        'videoJudul': videoJudul,
+        'videoUrl': videoUrl,
 
-          // Waktu perubahan
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
+        // ======================================================
+        // STATISTIK DESA
+        // ======================================================
+
+        'jumlahPenduduk': jumlahPenduduk,
+        'jumlahKeluarga': jumlahKeluarga,
+        'jumlahDusun': jumlahDusun,
+        'jumlahRtRw': jumlahRtRw,
+
+        // ======================================================
+        // FOOTER / KONTAK
+        // ======================================================
+
+        'footerDeskripsi': footerDeskripsi,
+        'footerAlamat': footerAlamat,
+        'footerTelepon': footerTelepon,
+        'footerEmail': footerEmail,
+
+        // JAM OPERASIONAL
+        'footerJamOperasional': footerJamOperasional,
+
+        // COPYRIGHT
+        'footerCopyright': footerCopyright,
+
+        // ======================================================
+        // WAKTU UPDATE
+        // ======================================================
+
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+
+      // ========================================================
+      // SIMPAN KE:
+      // pengaturan
+      //    └── website
+      // ========================================================
+
+      await _websiteRef.set(
+        data,
         SetOptions(merge: true),
       );
     } catch (e) {
@@ -104,15 +142,15 @@ class PengaturanService {
     }
   }
 
-  /// Update satu atau beberapa pengaturan saja
+  // ============================================================
+  // UPDATE PENGATURAN TERTENTU
+  // ============================================================
+
   Future<void> updatePengaturan(
     Map<String, dynamic> data,
   ) async {
     try {
-      await _firestore
-          .collection(_collection)
-          .doc(_document)
-          .set(
+      await _websiteRef.set(
         {
           ...data,
           'updatedAt': FieldValue.serverTimestamp(),
@@ -126,7 +164,10 @@ class PengaturanService {
     }
   }
 
-  /// Mengambil satu nilai pengaturan berdasarkan nama field
+  // ============================================================
+  // MENGAMBIL SATU FIELD
+  // ============================================================
+
   Future<dynamic> getValue(String field) async {
     try {
       final data = await getPengaturan();
@@ -143,13 +184,13 @@ class PengaturanService {
     }
   }
 
-  /// Menghapus seluruh pengaturan website
+  // ============================================================
+  // MENGHAPUS PENGATURAN
+  // ============================================================
+
   Future<void> deletePengaturan() async {
     try {
-      await _firestore
-          .collection(_collection)
-          .doc(_document)
-          .delete();
+      await _websiteRef.delete();
     } catch (e) {
       throw Exception(
         'Gagal menghapus pengaturan: $e',
@@ -157,18 +198,19 @@ class PengaturanService {
     }
   }
 
-  /// Stream pengaturan secara realtime
-  Stream<Map<String, dynamic>?> streamPengaturan() {
-    return _firestore
-        .collection(_collection)
-        .doc(_document)
-        .snapshots()
-        .map((snapshot) {
-      if (!snapshot.exists) {
-        return null;
-      }
+  // ============================================================
+  // STREAM REALTIME
+  // ============================================================
 
-      return snapshot.data();
-    });
+  Stream<Map<String, dynamic>?> streamPengaturan() {
+    return _websiteRef.snapshots().map(
+      (snapshot) {
+        if (!snapshot.exists) {
+          return null;
+        }
+
+        return snapshot.data();
+      },
+    );
   }
 }
