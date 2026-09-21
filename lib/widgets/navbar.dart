@@ -88,7 +88,7 @@ class Navbar extends StatelessWidget {
   Widget _logo() {
     return GestureDetector(
       onTap: () {
-        onNavigate('home');
+        onNavigate('home ');
       },
       child: Row(
         children: [

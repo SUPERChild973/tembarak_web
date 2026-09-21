@@ -73,7 +73,10 @@ class _MainPageState extends State<MainPage> {
         return const StrukturPage();
 
       case 'peta':
-        return const PetaPage();
+        return PetaPage(
+          currentPage: currentPage,
+          onNavigate: navigateTo,
+        );
 
       case 'produk':
         return const ProdukPage();
@@ -105,6 +108,7 @@ class _MainPageState extends State<MainPage> {
             currentPage: currentPage,
             onNavigate: navigateTo,
           ),
+
           Expanded(
             child: _getPage(),
           ),

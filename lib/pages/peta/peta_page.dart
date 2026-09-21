@@ -1,383 +1,266 @@
 import 'package:flutter/material.dart';
-import '../../config/app_theme.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
-class PetaPage extends StatelessWidget {
-  const PetaPage({super.key});
+class PetaPage extends StatefulWidget {
+  final String currentPage;
+  final Function(String) onNavigate;
+
+  const PetaPage({
+    super.key,
+    required this.currentPage,
+    required this.onNavigate,
+  });
+
+  @override
+  State<PetaPage> createState() => _PetaPageState();
+}
+
+class _PetaPageState extends State<PetaPage> {
+  final MapController _mapController = MapController();
+
+  // ============================================================
+  // GANTI KOORDINAT INI DENGAN KOORDINAT ASLI DESA TEMBARAK
+  // ============================================================
+  static const LatLng _lokasiDesa = LatLng(
+    -7.6072,
+    112.1033,
+  );
+
+  static const double _zoomAwal = 14.0;
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          _headerSection(),
-          _mapSection(context),
-          _locationSection(),
-        ],
-      ),
-    );
-  }
-
-  // ============================================================
-  // HEADER
-  // ============================================================
-
-  Widget _headerSection() {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 25,
-        vertical: 60,
-      ),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF0D3B13),
-            AppTheme.primary,
-            AppTheme.primaryLight,
-          ],
-        ),
-      ),
-      child: const Column(
-        children: [
-          Icon(
-            Icons.map,
-            color: Colors.white,
-            size: 60,
-          ),
-          SizedBox(height: 20),
-          Text(
-            'Peta Desa Tembarak',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 36,
-              fontWeight: FontWeight.bold,
+      color: const Color(0xFFF8FAF8),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final double lebar = constraints.maxWidth;
+
+          // Tinggi peta dibuat responsif.
+          double tinggiPeta;
+
+          if (lebar < 600) {
+            // HP
+            tinggiPeta = 420;
+          } else if (lebar < 1000) {
+            // Tablet
+            tinggiPeta = 500;
+          } else {
+            // Desktop
+            tinggiPeta = 620;
+          }
+
+          return Padding(
+            padding: EdgeInsets.all(
+              lebar < 600 ? 12 : 24,
             ),
-          ),
-          SizedBox(height: 12),
-          Text(
-            'Denah dan lokasi penting di Desa Tembarak',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 16,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ============================================================
-  // MAP
-  // ============================================================
-
-  Widget _mapSection(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    final isMobile = width < 700;
-
-    return Container(
-      width: double.infinity,
-      color: AppTheme.background,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 25,
-        vertical: 60,
-      ),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxWidth: 1100,
-          ),
-          child: Column(
-            children: [
-              const Text(
-                'Denah Desa',
-                style: TextStyle(
-                  color: AppTheme.primary,
-                  fontSize: 30,
-                  fontWeight: FontWeight.bold,
-                ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(
+                lebar < 600 ? 12 : 16,
               ),
-
-              const SizedBox(height: 10),
-
-              const Text(
-                'Peta wilayah Desa Tembarak',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.black54,
-                  fontSize: 15,
-                ),
-              ),
-
-              const SizedBox(height: 30),
-
-              Container(
+              child: SizedBox(
                 width: double.infinity,
-                height: isMobile ? 400 : 550,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(25),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.06),
-                      blurRadius: 20,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(25),
-                  child: _mapPlaceholder(),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 15,
-                ),
-                decoration: BoxDecoration(
-                  color: AppTheme.lightGreen,
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: const Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                height: tinggiPeta,
+                child: Stack(
                   children: [
-                    Icon(
-                      Icons.info_outline,
-                      color: AppTheme.primary,
-                    ),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Gambar denah Desa Tembarak dapat dimasukkan '
-                        'di bagian ini. Untuk sementara masih menggunakan '
-                        'tampilan placeholder.',
-                        style: TextStyle(
-                          color: Colors.black54,
-                          fontSize: 13,
-                          height: 1.5,
+                    // ==================================================
+                    // PETA SATELIT
+                    // ==================================================
+                    FlutterMap(
+                      mapController: _mapController,
+                      options: const MapOptions(
+                        initialCenter: _lokasiDesa,
+                        initialZoom: _zoomAwal,
+                        minZoom: 5,
+                        maxZoom: 19,
+                      ),
+                      children: [
+                        TileLayer(
+                          urlTemplate:
+                              'https://server.arcgisonline.com/ArcGIS/rest/services/'
+                              'World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                          userAgentPackageName: 'com.tembarak.web',
+                          maxZoom: 19,
                         ),
+
+                        // ==================================================
+                        // MARKER DESA TEMBARAK
+                        // ==================================================
+                        MarkerLayer(
+                          markers: [
+                            Marker(
+                              point: _lokasiDesa,
+                              width: 60,
+                              height: 70,
+                              child: GestureDetector(
+                                onTap: () {
+                                  _showLokasiDesa(context);
+                                },
+                                child: const Icon(
+                                  Icons.location_on,
+                                  size: 58,
+                                  color: Colors.blue,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+
+                    // ==================================================
+                    // LABEL SATELLITE
+                    // ==================================================
+                    Positioned(
+                      left: 16,
+                      bottom: 16,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.75),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 9,
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.satellite_alt,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              'Satellite',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // ==================================================
+                    // KONTROL ZOOM
+                    // ==================================================
+                    Positioned(
+                      right: 16,
+                      bottom: 16,
+                      child: Column(
+                        children: [
+                          _MapButton(
+                            icon: Icons.add,
+                            onPressed: () {
+                              _mapController.move(
+                                _mapController.camera.center,
+                                _mapController.camera.zoom + 1,
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 6),
+                          _MapButton(
+                            icon: Icons.remove,
+                            onPressed: () {
+                              _mapController.move(
+                                _mapController.camera.center,
+                                _mapController.camera.zoom - 1,
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // ==================================================
+                    // TOMBOL KEMBALI KE LOKASI DESA
+                    // ==================================================
+                    Positioned(
+                      right: 16,
+                      top: 16,
+                      child: _MapButton(
+                        icon: Icons.my_location,
+                        onPressed: () {
+                          _mapController.move(
+                            _lokasiDesa,
+                            _zoomAwal,
+                          );
+                        },
                       ),
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
 
-  // ============================================================
-  // MAP PLACEHOLDER
-  // ============================================================
-
-  Widget _mapPlaceholder() {
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFE8F5E9),
-            Color(0xFFF5F8F5),
-          ],
-        ),
-      ),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 110,
-              height: 110,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.map,
-                color: AppTheme.primary,
-                size: 60,
-              ),
-            ),
-
-            const SizedBox(height: 25),
-
-            const Text(
-              'DENAH DESA TEMBARAK',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppTheme.primary,
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1,
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
-            const Text(
-              'Tempat gambar peta desa',
-              style: TextStyle(
-                color: Colors.black45,
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ============================================================
-  // LOCATION
-  // ============================================================
-
-  Widget _locationSection() {
-    return Container(
-      width: double.infinity,
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 25,
-        vertical: 60,
-      ),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxWidth: 1100,
-          ),
-          child: Column(
-            children: [
-              const Text(
-                'Lokasi Penting',
-                style: TextStyle(
-                  color: AppTheme.primary,
-                  fontSize: 30,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-
-              const SizedBox(height: 10),
-
-              const Text(
-                'Beberapa fasilitas dan lokasi penting desa',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.black54,
-                  fontSize: 15,
-                ),
-              ),
-
-              const SizedBox(height: 35),
-
-              Wrap(
-                spacing: 20,
-                runSpacing: 20,
-                alignment: WrapAlignment.center,
-                children: [
-                  _locationCard(
-                    Icons.account_balance,
-                    'Kantor Desa',
-                    'Pemerintahan Desa',
-                  ),
-                  _locationCard(
-                    Icons.school,
-                    'Sekolah',
-                    'Pendidikan',
-                  ),
-                  _locationCard(
-                    Icons.local_hospital,
-                    'Puskesmas',
-                    'Kesehatan',
-                  ),
-                  _locationCard(
-                    Icons.mosque,
-                    'Tempat Ibadah',
-                    'Keagamaan',
-                  ),
-                  _locationCard(
-                    Icons.storefront,
-                    'UMKM',
-                    'Ekonomi Masyarakat',
-                  ),
-                  _locationCard(
-                    Icons.sports_soccer,
-                    'Lapangan Desa',
-                    'Fasilitas Olahraga',
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _locationCard(
-    IconData icon,
-    String title,
-    String subtitle,
-  ) {
-    return Container(
-      width: 250,
-      padding: const EdgeInsets.all(25),
-      decoration: BoxDecoration(
-        color: AppTheme.background,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppTheme.primary.withOpacity(0.08),
-        ),
-      ),
-      child: Column(
-        children: [
-          Container(
-            width: 65,
-            height: 65,
-            decoration: const BoxDecoration(
-              color: AppTheme.lightGreen,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              icon,
-              color: AppTheme.primary,
-              size: 32,
-            ),
-          ),
-
-          const SizedBox(height: 15),
-
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: AppTheme.primary,
-              fontSize: 17,
+  void _showLokasiDesa(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text(
+            'Desa Tembarak',
+            style: TextStyle(
               fontWeight: FontWeight.bold,
             ),
           ),
-
-          const SizedBox(height: 7),
-
-          Text(
-            subtitle,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.black54,
-              fontSize: 13,
-            ),
+          content: const Text(
+            'Lokasi Desa Tembarak pada peta.',
           ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('Tutup'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+// ================================================================
+// BUTTON PETA
+// ================================================================
+class _MapButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  const _MapButton({
+    required this.icon,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      elevation: 3,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: onPressed,
+        child: SizedBox(
+          width: 42,
+          height: 42,
+          child: Icon(
+            icon,
+            color: const Color(0xFF333333),
+            size: 22,
+          ),
+        ),
       ),
     );
   }

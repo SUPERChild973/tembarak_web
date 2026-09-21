@@ -62,8 +62,7 @@ class _StrukturAdminPageState
   Future<void> _hapus(
     Perangkat perangkat,
   ) async {
-    final yakin =
-        await showDialog<bool>(
+    final yakin = await showDialog<bool>(
       context: context,
       builder: (context) {
         return AlertDialog(
@@ -75,24 +74,17 @@ class _StrukturAdminPageState
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.pop(
-                  context,
-                  false,
-                );
+                Navigator.pop(context, false);
               },
               child: const Text('Batal'),
             ),
             ElevatedButton(
-              style:
-                  ElevatedButton.styleFrom(
+              style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
               ),
               onPressed: () {
-                Navigator.pop(
-                  context,
-                  true,
-                );
+                Navigator.pop(context, true);
               },
               child: const Text('Hapus'),
             ),
@@ -104,8 +96,7 @@ class _StrukturAdminPageState
     if (yakin != true) return;
 
     try {
-      await _perangkatService
-          .hapusPerangkat(
+      await _perangkatService.hapusPerangkat(
         perangkat.id,
       );
 
@@ -117,8 +108,7 @@ class _StrukturAdminPageState
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
             'Data berhasil dihapus.',
@@ -128,8 +118,7 @@ class _StrukturAdminPageState
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             'Gagal menghapus data: $e',
@@ -144,103 +133,212 @@ class _StrukturAdminPageState
   // ============================================================
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
           'Struktur Desa',
         ),
       ),
+
       body: StreamBuilder<List<Perangkat>>(
-        stream:
-            _perangkatService.getPerangkat(),
-        builder:
-            (context, snapshot) {
+        stream: _perangkatService.getPerangkat(),
+        builder: (context, snapshot) {
+          // ====================================================
+          // LOADING
+          // ====================================================
+
           if (snapshot.connectionState ==
               ConnectionState.waiting) {
             return const Center(
-              child:
-                  CircularProgressIndicator(),
+              child: CircularProgressIndicator(),
             );
           }
 
+          // ====================================================
+          // ERROR
+          // ====================================================
+
           if (snapshot.hasError) {
             return Center(
-              child: Text(
-                'Terjadi kesalahan:\n'
-                '${snapshot.error}',
-                textAlign:
-                    TextAlign.center,
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  'Terjadi kesalahan:\n'
+                  '${snapshot.error}',
+                  textAlign: TextAlign.center,
+                ),
               ),
             );
           }
 
-          final data =
-              snapshot.data ?? [];
+          final data = snapshot.data ?? [];
+
+          // ====================================================
+          // CONTENT
+          // ====================================================
 
           return SingleChildScrollView(
-            padding:
-                const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(24),
             child: Center(
               child: ConstrainedBox(
-                constraints:
-                    const BoxConstraints(
+                constraints: const BoxConstraints(
                   maxWidth: 1100,
                 ),
                 child: Column(
                   crossAxisAlignment:
                       CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment:
-                          MainAxisAlignment
-                              .spaceBetween,
-                      children: [
-                        const Column(
+                    // ==================================================
+                    // HEADER RESPONSIVE
+                    // ==================================================
+
+                    LayoutBuilder(
+                      builder: (
+                        context,
+                        constraints,
+                      ) {
+                        final isMobile =
+                            constraints.maxWidth < 700;
+
+                        // ================================
+                        // MOBILE
+                        // ================================
+
+                        if (isMobile) {
+                          return Column(
+                            crossAxisAlignment:
+                                CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Struktur Pemerintahan Desa',
+                                style: TextStyle(
+                                  fontSize:
+                                      constraints.maxWidth < 450
+                                          ? 26
+                                          : 30,
+                                  fontWeight:
+                                      FontWeight.bold,
+                                ),
+                              ),
+
+                              const SizedBox(
+                                height: 8,
+                              ),
+
+                              const Text(
+                                'Kelola data perangkat desa.',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.black54,
+                                ),
+                              ),
+
+                              const SizedBox(
+                                height: 18,
+                              ),
+
+                              SizedBox(
+                                width: double.infinity,
+                                child:
+                                    ElevatedButton.icon(
+                                  onPressed: _tambah,
+                                  icon: const Icon(
+                                    Icons.add,
+                                  ),
+                                  label: const Text(
+                                    'Tambah',
+                                  ),
+                                  style:
+                                      ElevatedButton
+                                          .styleFrom(
+                                    padding:
+                                        const EdgeInsets
+                                            .symmetric(
+                                      vertical: 14,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        }
+
+                        // ================================
+                        // DESKTOP / TABLET
+                        // ================================
+
+                        return Row(
                           crossAxisAlignment:
-                              CrossAxisAlignment
-                                  .start,
+                              CrossAxisAlignment.center,
+                          mainAxisAlignment:
+                              MainAxisAlignment
+                                  .spaceBetween,
                           children: [
-                            Text(
-                              'Struktur Pemerintahan Desa',
-                              style: TextStyle(
-                                fontSize: 26,
-                                fontWeight:
-                                    FontWeight.bold,
+                            Flexible(
+                              child: Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment
+                                        .start,
+                                children: [
+                                  const Text(
+                                    'Struktur Pemerintahan Desa',
+                                    style: TextStyle(
+                                      fontSize: 30,
+                                      fontWeight:
+                                          FontWeight.bold,
+                                    ),
+                                  ),
+
+                                  const SizedBox(
+                                    height: 8,
+                                  ),
+
+                                  const Text(
+                                    'Kelola data perangkat desa.',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color:
+                                          Colors.black54,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            SizedBox(height: 6),
-                            Text(
-                              'Kelola data perangkat desa.',
-                              style: TextStyle(
-                                color:
-                                    Colors.grey,
+
+                            const SizedBox(
+                              width: 20,
+                            ),
+
+                            ElevatedButton.icon(
+                              onPressed: _tambah,
+                              icon: const Icon(
+                                Icons.add,
+                              ),
+                              label: const Text(
+                                'Tambah',
                               ),
                             ),
                           ],
-                        ),
-                        ElevatedButton.icon(
-                          onPressed: _tambah,
-                          icon:
-                              const Icon(
-                            Icons.add,
-                          ),
-                          label:
-                              const Text(
-                            'Tambah Perangkat',
-                          ),
-                        ),
-                      ],
+                        );
+                      },
                     ),
 
                     const SizedBox(
                       height: 28,
                     ),
 
+                    // ==================================================
+                    // DATA KOSONG
+                    // ==================================================
+
                     if (data.isEmpty)
-                      _Kosong()
+                      const _Kosong()
+
+                    // ==================================================
+                    // DATA PERANGKAT
+                    // ==================================================
+
                     else
                       LayoutBuilder(
                         builder: (
@@ -249,8 +347,7 @@ class _StrukturAdminPageState
                         ) {
                           int kolom = 1;
 
-                          if (constraints
-                                  .maxWidth >=
+                          if (constraints.maxWidth >=
                               900) {
                             kolom = 3;
                           } else if (constraints
@@ -259,23 +356,23 @@ class _StrukturAdminPageState
                             kolom = 2;
                           }
 
-                          return GridView
-                              .builder(
+                          return GridView.builder(
                             shrinkWrap: true,
                             physics:
                                 const NeverScrollableScrollPhysics(),
-                            itemCount:
-                                data.length,
+                            itemCount: data.length,
                             gridDelegate:
                                 SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount:
-                                  kolom,
-                              crossAxisSpacing:
-                                  20,
-                              mainAxisSpacing:
-                                  20,
+                              crossAxisCount: kolom,
+                              crossAxisSpacing: 20,
+                              mainAxisSpacing: 20,
+
+                              // Sedikit lebih tinggi
+                              // supaya aman untuk HP.
                               childAspectRatio:
-                                  0.65,
+                                  kolom == 1
+                                      ? 0.72
+                                      : 0.65,
                             ),
                             itemBuilder:
                                 (
@@ -290,12 +387,12 @@ class _StrukturAdminPageState
                                     perangkat,
                                 onEdit: () =>
                                     _edit(
-                                  perangkat,
-                                ),
+                                      perangkat,
+                                    ),
                                 onDelete: () =>
                                     _hapus(
-                                  perangkat,
-                                ),
+                                      perangkat,
+                                    ),
                               );
                             },
                           );
@@ -316,16 +413,14 @@ class _StrukturAdminPageState
 // DATA KOSONG
 // ================================================================
 
-class _Kosong
-    extends StatelessWidget {
+class _Kosong extends StatelessWidget {
+  const _Kosong();
+
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding:
-          const EdgeInsets.all(50),
+      padding: const EdgeInsets.all(50),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius:
@@ -338,7 +433,11 @@ class _Kosong
             size: 70,
             color: Colors.grey,
           ),
-          SizedBox(height: 16),
+
+          SizedBox(
+            height: 16,
+          ),
+
           Text(
             'Belum ada perangkat desa.',
             style: TextStyle(
@@ -368,73 +467,65 @@ class _KartuPerangkat
   });
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return Card(
-      clipBehavior:
-          Clip.antiAlias,
+      clipBehavior: Clip.antiAlias,
       elevation: 2,
       child: Column(
         children: [
+          // ======================================================
+          // FOTO
+          // ======================================================
+
           Expanded(
             flex: 6,
             child: Container(
               width: double.infinity,
-              color:
-                  AppTheme.lightGreen,
-              child: perangkat
-                      .fotoUrl
-                      .isEmpty
+              color: AppTheme.lightGreen,
+              child: perangkat.fotoUrl.isEmpty
                   ? const Icon(
                       Icons.person,
                       size: 80,
-                      color:
-                          AppTheme.primary,
+                      color: AppTheme.primary,
                     )
                   : Image.network(
                       perangkat.fotoUrl,
-                      width:
-                          double.infinity,
+                      width: double.infinity,
                       fit: BoxFit.cover,
-                      errorBuilder:
-                          (
+                      errorBuilder: (
                         context,
                         error,
                         stackTrace,
                       ) {
                         return const Icon(
-                          Icons
-                              .broken_image,
+                          Icons.broken_image,
                           size: 60,
-                          color:
-                              Colors.grey,
+                          color: Colors.grey,
                         );
                       },
                     ),
             ),
           ),
 
+          // ======================================================
+          // INFORMASI
+          // ======================================================
+
           Expanded(
             flex: 4,
             child: Padding(
               padding:
-                  const EdgeInsets.all(
-                16,
-              ),
+                  const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment:
-                    CrossAxisAlignment
-                        .start,
+                    CrossAxisAlignment.start,
                 children: [
                   Text(
                     perangkat.nama,
                     maxLines: 2,
                     overflow:
-                        TextOverflow
-                            .ellipsis,
-                    style:
-                        const TextStyle(
+                        TextOverflow.ellipsis,
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight:
                           FontWeight.bold,
@@ -449,10 +540,8 @@ class _KartuPerangkat
                     perangkat.jabatan,
                     maxLines: 2,
                     overflow:
-                        TextOverflow
-                            .ellipsis,
-                    style:
-                        const TextStyle(
+                        TextOverflow.ellipsis,
+                    style: const TextStyle(
                       color:
                           AppTheme.primary,
                       fontWeight:
@@ -460,40 +549,37 @@ class _KartuPerangkat
                     ),
                   ),
 
-                  if (perangkat
-                      .keterangan
+                  if (perangkat.keterangan
                       .trim()
                       .isNotEmpty) ...[
                     const SizedBox(
                       height: 8,
                     ),
+
                     Text(
-                      perangkat
-                          .keterangan,
+                      perangkat.keterangan,
                       maxLines: 3,
                       overflow:
-                          TextOverflow
-                              .ellipsis,
-                      style:
-                          const TextStyle(
-                        color:
-                            Colors.grey,
+                          TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.grey,
                       ),
                     ),
                   ],
 
                   const Spacer(),
 
+                  // ==================================================
+                  // BUTTON EDIT & HAPUS
+                  // ==================================================
+
                   Row(
                     children: [
                       Expanded(
                         child:
-                            OutlinedButton
-                                .icon(
-                          onPressed:
-                              onEdit,
-                          icon:
-                              const Icon(
+                            OutlinedButton.icon(
+                          onPressed: onEdit,
+                          icon: const Icon(
                             Icons.edit,
                             size: 18,
                           ),
@@ -503,20 +589,18 @@ class _KartuPerangkat
                           ),
                         ),
                       ),
+
                       const SizedBox(
                         width: 8,
                       ),
+
                       IconButton(
-                        onPressed:
-                            onDelete,
-                        color:
-                            Colors.red,
-                        tooltip:
-                            'Hapus',
+                        onPressed: onDelete,
+                        color: Colors.red,
+                        tooltip: 'Hapus',
                         icon:
                             const Icon(
-                          Icons
-                              .delete_outline,
+                          Icons.delete_outline,
                         ),
                       ),
                     ],
@@ -571,20 +655,21 @@ class _FormPerangkatState
 
   Uint8List? _fotoBaru;
   String? _namaFile;
-
   String _fotoLama = '';
 
   bool _loading = false;
 
-  // Progress 0 - 1
   double _uploadProgress = 0;
+
+  // ============================================================
+  // INIT
+  // ============================================================
 
   @override
   void initState() {
     super.initState();
 
-    final data =
-        widget.perangkat;
+    final data = widget.perangkat;
 
     _namaController =
         TextEditingController(
@@ -609,6 +694,10 @@ class _FormPerangkatState
     _fotoLama =
         data?.fotoUrl ?? '';
   }
+
+  // ============================================================
+  // DISPOSE
+  // ============================================================
 
   @override
   void dispose() {
@@ -647,8 +736,6 @@ class _FormPerangkatState
         return;
       }
 
-      // Batas ukuran foto asli.
-      // 10 MB cukup untuk foto perangkat.
       const maxSize =
           10 * 1024 * 1024;
 
@@ -664,6 +751,7 @@ class _FormPerangkatState
       setState(() {
         _fotoBaru =
             file.bytes;
+
         _namaFile =
             file.name;
       });
@@ -690,10 +778,7 @@ class _FormPerangkatState
       bytes: _fotoBaru!,
       fileName:
           _namaFile ?? 'foto.jpg',
-
-      // Progress upload
-      onProgress:
-          (progress) {
+      onProgress: (progress) {
         if (!mounted) return;
 
         setState(() {
@@ -703,7 +788,7 @@ class _FormPerangkatState
       },
     );
 
-    // Hapus foto lama SETELAH
+    // Hapus foto lama setelah
     // foto baru berhasil diupload.
     if (_fotoLama.isNotEmpty) {
       await widget.storageService
@@ -759,9 +844,10 @@ class _FormPerangkatState
         await widget
             .perangkatService
             .tambahPerangkat(
-          nama: _namaController
-              .text
-              .trim(),
+          nama:
+              _namaController
+                  .text
+                  .trim(),
           jabatan:
               _jabatanController
                   .text
@@ -786,9 +872,10 @@ class _FormPerangkatState
           id: widget
               .perangkat!
               .id,
-          nama: _namaController
-              .text
-              .trim(),
+          nama:
+              _namaController
+                  .text
+                  .trim(),
           jabatan:
               _jabatanController
                   .text
@@ -837,15 +924,12 @@ class _FormPerangkatState
   // PESAN
   // ============================================================
 
-  void _pesan(
-    String text,
-  ) {
+  void _pesan(String text) {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(
       SnackBar(
-        content:
-            Text(text),
+        content: Text(text),
       ),
     );
   }
@@ -859,8 +943,17 @@ class _FormPerangkatState
     BuildContext context,
   ) {
     final edit =
-        widget.perangkat !=
-            null;
+        widget.perangkat != null;
+
+    final screenWidth =
+        MediaQuery.of(context)
+            .size
+            .width;
+
+    final dialogWidth =
+        screenWidth < 600
+            ? screenWidth - 48
+            : 500.0;
 
     return AlertDialog(
       title: Text(
@@ -870,45 +963,43 @@ class _FormPerangkatState
       ),
 
       content: SizedBox(
-        width: 500,
-        child:
-            SingleChildScrollView(
+        width: dialogWidth,
+        child: SingleChildScrollView(
           child: Form(
             key: _formKey,
             child: Column(
               children: [
+                // ==================================================
+                // PREVIEW FOTO
+                // ==================================================
+
                 _PreviewFoto(
-                  fotoBaru:
-                      _fotoBaru,
-                  fotoLama:
-                      _fotoLama,
+                  fotoBaru: _fotoBaru,
+                  fotoLama: _fotoLama,
                 ),
 
                 const SizedBox(
                   height: 14,
                 ),
 
-                // ------------------------------------------------
+                // ==================================================
                 // PILIH FOTO
-                // ------------------------------------------------
+                // ==================================================
 
                 SizedBox(
                   width:
                       double.infinity,
                   child:
-                      ElevatedButton
-                          .icon(
+                      ElevatedButton.icon(
                     onPressed:
                         _loading
                             ? null
                             : _pilihFoto,
                     icon:
                         const Icon(
-                      Icons
-                          .photo_library,
+                      Icons.photo_library,
                     ),
-                    label:
-                        Text(
+                    label: Text(
                       _fotoBaru ==
                               null
                           ? 'Pilih Foto dari Perangkat'
@@ -922,11 +1013,11 @@ class _FormPerangkatState
                   const SizedBox(
                     height: 8,
                   ),
+
                   Text(
                     _namaFile!,
                     textAlign:
-                        TextAlign
-                            .center,
+                        TextAlign.center,
                     style:
                         const TextStyle(
                       color:
@@ -939,9 +1030,9 @@ class _FormPerangkatState
                   height: 20,
                 ),
 
-                // ------------------------------------------------
+                // ==================================================
                 // PROGRESS UPLOAD
-                // ------------------------------------------------
+                // ==================================================
 
                 if (_loading &&
                     _fotoBaru !=
@@ -964,12 +1055,11 @@ class _FormPerangkatState
                         _uploadProgress >
                                 0
                             ? 'Mengupload foto '
-                                '${(_uploadProgress * 100).toStringAsFixed(0)}%'
+                              '${(_uploadProgress * 100).toStringAsFixed(0)}%'
                             : 'Menyiapkan foto...',
                         style:
                             const TextStyle(
-                          fontSize:
-                              13,
+                          fontSize: 13,
                           color:
                               Colors.grey,
                         ),
@@ -982,9 +1072,9 @@ class _FormPerangkatState
                   ),
                 ],
 
-                // ------------------------------------------------
+                // ==================================================
                 // NAMA
-                // ------------------------------------------------
+                // ==================================================
 
                 TextFormField(
                   controller:
@@ -1018,9 +1108,9 @@ class _FormPerangkatState
                   height: 16,
                 ),
 
-                // ------------------------------------------------
+                // ==================================================
                 // JABATAN
-                // ------------------------------------------------
+                // ==================================================
 
                 TextFormField(
                   controller:
@@ -1054,9 +1144,9 @@ class _FormPerangkatState
                   height: 16,
                 ),
 
-                // ------------------------------------------------
+                // ==================================================
                 // KETERANGAN
-                // ------------------------------------------------
+                // ==================================================
 
                 TextFormField(
                   controller:
@@ -1079,9 +1169,9 @@ class _FormPerangkatState
                   height: 16,
                 ),
 
-                // ------------------------------------------------
+                // ==================================================
                 // URUTAN
-                // ------------------------------------------------
+                // ==================================================
 
                 TextFormField(
                   controller:
@@ -1089,8 +1179,7 @@ class _FormPerangkatState
                   enabled:
                       !_loading,
                   keyboardType:
-                      TextInputType
-                          .number,
+                      TextInputType.number,
                   decoration:
                       const InputDecoration(
                     labelText:
@@ -1116,10 +1205,11 @@ class _FormPerangkatState
           onPressed:
               _loading
                   ? null
-                  : () =>
+                  : () {
                       Navigator.pop(
-                    context,
-                  ),
+                        context,
+                      );
+                    },
           child:
               const Text(
             'Batal',
@@ -1176,6 +1266,10 @@ class _PreviewFoto
   ) {
     Widget isi;
 
+    // ============================================================
+    // FOTO BARU
+    // ============================================================
+
     if (fotoBaru != null) {
       isi = Image.memory(
         fotoBaru!,
@@ -1185,7 +1279,13 @@ class _PreviewFoto
             double.infinity,
         fit: BoxFit.cover,
       );
-    } else if (fotoLama.isNotEmpty) {
+    }
+
+    // ============================================================
+    // FOTO LAMA
+    // ============================================================
+
+    else if (fotoLama.isNotEmpty) {
       isi = Image.network(
         fotoLama,
         width:
@@ -1193,8 +1293,7 @@ class _PreviewFoto
         height:
             double.infinity,
         fit: BoxFit.cover,
-        errorBuilder:
-            (
+        errorBuilder: (
           context,
           error,
           stackTrace,
@@ -1205,12 +1304,17 @@ class _PreviewFoto
           );
         },
       );
-    } else {
+    }
+
+    // ============================================================
+    // BELUM ADA FOTO
+    // ============================================================
+
+    else {
       isi = const Icon(
         Icons.person,
         size: 80,
-        color:
-            AppTheme.primary,
+        color: AppTheme.primary,
       );
     }
 
