@@ -1,7 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PengaturanService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore =
+      FirebaseFirestore.instance;
 
   // Nama collection khusus untuk pengaturan website
   final String _collection = 'pengaturan';
@@ -23,12 +24,21 @@ class PengaturanService {
 
       return doc.data();
     } catch (e) {
-      throw Exception('Gagal mengambil data pengaturan: $e');
+      throw Exception(
+        'Gagal mengambil data pengaturan: $e',
+      );
     }
   }
 
   /// Menyimpan pengaturan website
   Future<void> savePengaturan({
+    // =========================
+    // INFORMASI DESA
+    // =========================
+    required String namaDesa,
+    required String kecamatan,
+    required String kabupaten,
+
     // =========================
     // VIDEO PROFIL DESA
     // =========================
@@ -50,39 +60,51 @@ class PengaturanService {
     required String footerAlamat,
     required String footerTelepon,
     required String footerEmail,
-    required String footerCopyright, required String namaDesa, required String kecamatan, required String kabupaten,
+    required String footerJamOperasional,
+    required String footerCopyright,
   }) async {
     try {
       await _firestore
           .collection(_collection)
           .doc(_document)
-          .set({
-        // Video
-        'videoJudul': videoJudul,
-        'videoUrl': videoUrl,
+          .set(
+        {
+          // Informasi Desa
+          'namaDesa': namaDesa,
+          'kecamatan': kecamatan,
+          'kabupaten': kabupaten,
 
-        // Statistik
-        'jumlahPenduduk': jumlahPenduduk,
-        'jumlahKeluarga': jumlahKeluarga,
-        'jumlahDusun': jumlahDusun,
-        'jumlahRtRw': jumlahRtRw,
+          // Video Profil
+          'videoJudul': videoJudul,
+          'videoUrl': videoUrl,
 
-        // Footer
-        'footerDeskripsi': footerDeskripsi,
-        'footerAlamat': footerAlamat,
-        'footerTelepon': footerTelepon,
-        'footerEmail': footerEmail,
-        'footerCopyright': footerCopyright,
+          // Statistik Desa
+          'jumlahPenduduk': jumlahPenduduk,
+          'jumlahKeluarga': jumlahKeluarga,
+          'jumlahDusun': jumlahDusun,
+          'jumlahRtRw': jumlahRtRw,
 
-        // Waktu perubahan
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+          // Footer
+          'footerDeskripsi': footerDeskripsi,
+          'footerAlamat': footerAlamat,
+          'footerTelepon': footerTelepon,
+          'footerEmail': footerEmail,
+          'footerJamOperasional': footerJamOperasional,
+          'footerCopyright': footerCopyright,
+
+          // Waktu perubahan
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
     } catch (e) {
-      throw Exception('Gagal menyimpan pengaturan: $e');
+      throw Exception(
+        'Gagal menyimpan pengaturan: $e',
+      );
     }
   }
 
-  /// Update satu pengaturan saja
+  /// Update satu atau beberapa pengaturan saja
   Future<void> updatePengaturan(
     Map<String, dynamic> data,
   ) async {
@@ -91,14 +113,16 @@ class PengaturanService {
           .collection(_collection)
           .doc(_document)
           .set(
-            {
-              ...data,
-              'updatedAt': FieldValue.serverTimestamp(),
-            },
-            SetOptions(merge: true),
-          );
+        {
+          ...data,
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
     } catch (e) {
-      throw Exception('Gagal memperbarui pengaturan: $e');
+      throw Exception(
+        'Gagal memperbarui pengaturan: $e',
+      );
     }
   }
 
@@ -127,7 +151,9 @@ class PengaturanService {
           .doc(_document)
           .delete();
     } catch (e) {
-      throw Exception('Gagal menghapus pengaturan: $e');
+      throw Exception(
+        'Gagal menghapus pengaturan: $e',
+      );
     }
   }
 

@@ -12,17 +12,16 @@ class ProdukAdminPage extends StatefulWidget {
   const ProdukAdminPage({super.key});
 
   @override
-  State<ProdukAdminPage> createState() =>
-      _ProdukAdminPageState();
+  State<ProdukAdminPage> createState() => _ProdukAdminPageState();
 }
 
-class _ProdukAdminPageState
-    extends State<ProdukAdminPage> {
-  final ProdukService _produkService =
-      ProdukService();
+class _ProdukAdminPageState extends State<ProdukAdminPage> {
+  final ProdukService _produkService = ProdukService();
+  final StorageService _storageService = StorageService();
 
-  final StorageService _storageService =
-      StorageService();
+  // ============================================================
+  // BUILD
+  // ============================================================
 
   @override
   Widget build(BuildContext context) {
@@ -38,8 +37,7 @@ class _ProdukAdminPageState
         ),
       ),
 
-      floatingActionButton:
-          FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton.extended(
         backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add),
@@ -52,6 +50,10 @@ class _ProdukAdminPageState
       body: StreamBuilder<List<Produk>>(
         stream: _produkService.getProduk(),
         builder: (context, snapshot) {
+          // ======================================================
+          // LOADING
+          // ======================================================
+
           if (snapshot.connectionState ==
               ConnectionState.waiting) {
             return const Center(
@@ -60,6 +62,10 @@ class _ProdukAdminPageState
               ),
             );
           }
+
+          // ======================================================
+          // ERROR
+          // ======================================================
 
           if (snapshot.hasError) {
             return Center(
@@ -100,28 +106,27 @@ class _ProdukAdminPageState
             );
           }
 
-          final produk =
-              snapshot.data ?? [];
+          final produk = snapshot.data ?? [];
+
+          // ======================================================
+          // DATA KOSONG
+          // ======================================================
 
           if (produk.isEmpty) {
             return Center(
               child: Container(
-                constraints:
-                    const BoxConstraints(
+                constraints: const BoxConstraints(
                   maxWidth: 500,
                 ),
-                margin:
-                    const EdgeInsets.all(30),
-                padding:
-                    const EdgeInsets.all(40),
+                margin: const EdgeInsets.all(30),
+                padding: const EdgeInsets.all(40),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius:
                       BorderRadius.circular(22),
                 ),
                 child: const Column(
-                  mainAxisSize:
-                      MainAxisSize.min,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       Icons.storefront_outlined,
@@ -133,23 +138,20 @@ class _ProdukAdminPageState
 
                     Text(
                       'Belum Ada Produk',
-                      textAlign:
-                          TextAlign.center,
+                      textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 22,
-                        fontWeight:
-                            FontWeight.bold,
-                        color:
-                            AppTheme.primary,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primary,
                       ),
                     ),
 
                     SizedBox(height: 10),
 
                     Text(
-                      'Silakan tambahkan produk unggulan desa menggunakan tombol Tambah Produk.',
-                      textAlign:
-                          TextAlign.center,
+                      'Silakan tambahkan produk unggulan '
+                      'desa menggunakan tombol Tambah Produk.',
+                      textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.black54,
                         height: 1.5,
@@ -161,29 +163,37 @@ class _ProdukAdminPageState
             );
           }
 
-          return ListView.builder(
-            padding:
-                const EdgeInsets.fromLTRB(
-              30,
-              30,
-              30,
-              100,
-            ),
-            itemCount: produk.length,
-            itemBuilder:
-                (context, index) {
-              final item =
-                  produk[index];
+          // ======================================================
+          // DAFTAR PRODUK
+          // ======================================================
 
-              return _ProdukItem(
-                produk: item,
-                onEdit: () {
-                  _showProdukForm(
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final isMobile =
+                  constraints.maxWidth < 600;
+
+              return ListView.builder(
+                padding: EdgeInsets.fromLTRB(
+                  isMobile ? 14 : 30,
+                  isMobile ? 18 : 30,
+                  isMobile ? 14 : 30,
+                  110,
+                ),
+                itemCount: produk.length,
+                itemBuilder: (context, index) {
+                  final item = produk[index];
+
+                  return _ProdukItem(
                     produk: item,
+                    onEdit: () {
+                      _showProdukForm(
+                        produk: item,
+                      );
+                    },
+                    onDelete: () {
+                      _hapusProduk(item);
+                    },
                   );
-                },
-                onDelete: () {
-                  _hapusProduk(item);
                 },
               );
             },
@@ -192,6 +202,10 @@ class _ProdukAdminPageState
       ),
     );
   }
+
+  // ============================================================
+  // FORM TAMBAH / EDIT PRODUK
+  // ============================================================
 
   Future<void> _showProdukForm({
     Produk? produk,
@@ -226,8 +240,7 @@ class _ProdukAdminPageState
 
     final urutanController =
         TextEditingController(
-      text: produk?.urutan.toString() ??
-          '1',
+      text: produk?.urutan.toString() ?? '1',
     );
 
     Uint8List? selectedBytes;
@@ -243,8 +256,14 @@ class _ProdukAdminPageState
       barrierDismissible: false,
       builder: (dialogContext) {
         return StatefulBuilder(
-          builder:
-              (context, setDialogState) {
+          builder: (
+            context,
+            setDialogState,
+          ) {
+            // ==================================================
+            // PILIH FOTO
+            // ==================================================
+
             Future<void> pilihFoto() async {
               try {
                 final result =
@@ -271,6 +290,7 @@ class _ProdukAdminPageState
                       ),
                     ),
                   );
+
                   return;
                 }
 
@@ -293,6 +313,10 @@ class _ProdukAdminPageState
               }
             }
 
+            // ==================================================
+            // SIMPAN
+            // ==================================================
+
             Future<void> simpan() async {
               if (!formKey.currentState!
                   .validate()) {
@@ -307,6 +331,10 @@ class _ProdukAdminPageState
                 String finalFotoUrl =
                     fotoUrl;
 
+                // ==============================================
+                // UPLOAD FOTO BARU
+                // ==============================================
+
                 if (selectedBytes != null) {
                   finalFotoUrl =
                       await _storageService
@@ -317,6 +345,7 @@ class _ProdukAdminPageState
                             'produk.jpg',
                   );
 
+                  // Hapus foto lama
                   if (produk != null &&
                       produk.fotoUrl
                           .trim()
@@ -359,6 +388,10 @@ class _ProdukAdminPageState
                         ) ??
                         1;
 
+                // ==============================================
+                // TAMBAH PRODUK
+                // ==============================================
+
                 if (produk == null) {
                   await _produkService
                       .tambahProduk(
@@ -372,7 +405,13 @@ class _ProdukAdminPageState
                         deskripsi,
                     urutan: urutan,
                   );
-                } else {
+                }
+
+                // ==============================================
+                // UPDATE PRODUK
+                // ==============================================
+
+                else {
                   await _produkService
                       .updateProduk(
                     id: produk.id,
@@ -388,8 +427,7 @@ class _ProdukAdminPageState
                   );
                 }
 
-                if (!dialogContext
-                    .mounted) {
+                if (!dialogContext.mounted) {
                   return;
                 }
 
@@ -410,6 +448,8 @@ class _ProdukAdminPageState
                           ? 'Produk berhasil ditambahkan.'
                           : 'Produk berhasil diperbarui.',
                     ),
+                    backgroundColor:
+                        Colors.green,
                   ),
                 );
               } catch (e) {
@@ -417,8 +457,7 @@ class _ProdukAdminPageState
                   uploading = false;
                 });
 
-                if (!dialogContext
-                    .mounted) {
+                if (!dialogContext.mounted) {
                   return;
                 }
 
@@ -429,12 +468,34 @@ class _ProdukAdminPageState
                     content: Text(
                       'Gagal menyimpan produk: $e',
                     ),
+                    backgroundColor:
+                        Colors.red,
                   ),
                 );
               }
             }
 
+            // ==================================================
+            // LEBAR FORM RESPONSIVE
+            // ==================================================
+
+            final screenWidth =
+                MediaQuery.of(context)
+                    .size
+                    .width;
+
+            final dialogWidth =
+                screenWidth > 680
+                    ? 650.0
+                    : screenWidth - 32;
+
             return AlertDialog(
+              insetPadding:
+                  const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 24,
+              ),
+
               title: Text(
                 produk == null
                     ? 'Tambah Produk'
@@ -442,15 +503,18 @@ class _ProdukAdminPageState
               ),
 
               content: SizedBox(
-                width: 650,
-                child:
-                    SingleChildScrollView(
+                width: dialogWidth,
+                child: SingleChildScrollView(
                   child: Form(
                     key: formKey,
                     child: Column(
                       mainAxisSize:
                           MainAxisSize.min,
                       children: [
+                        // ======================================
+                        // NAMA PRODUK
+                        // ======================================
+
                         TextFormField(
                           controller:
                               namaController,
@@ -485,6 +549,10 @@ class _ProdukAdminPageState
                         const SizedBox(
                           height: 16,
                         ),
+
+                        // ======================================
+                        // PEMILIK
+                        // ======================================
 
                         TextFormField(
                           controller:
@@ -521,6 +589,10 @@ class _ProdukAdminPageState
                           height: 16,
                         ),
 
+                        // ======================================
+                        // ALAMAT
+                        // ======================================
+
                         TextFormField(
                           controller:
                               alamatController,
@@ -538,6 +610,8 @@ class _ProdukAdminPageState
                             ),
                             border:
                                 OutlineInputBorder(),
+                            alignLabelWithHint:
+                                true,
                           ),
                           validator:
                               (value) {
@@ -556,6 +630,10 @@ class _ProdukAdminPageState
                         const SizedBox(
                           height: 16,
                         ),
+
+                        // ======================================
+                        // TELEPON
+                        // ======================================
 
                         TextFormField(
                           controller:
@@ -581,6 +659,10 @@ class _ProdukAdminPageState
                         const SizedBox(
                           height: 16,
                         ),
+
+                        // ======================================
+                        // DESKRIPSI
+                        // ======================================
 
                         TextFormField(
                           controller:
@@ -608,16 +690,19 @@ class _ProdukAdminPageState
                           height: 20,
                         ),
 
+                        // ======================================
+                        // JUDUL FOTO
+                        // ======================================
+
                         Align(
                           alignment:
-                              Alignment
-                                  .centerLeft,
+                              Alignment.centerLeft,
                           child: Text(
                             'Foto Produk',
-                            style: TextStyle(
+                            style:
+                                TextStyle(
                               fontWeight:
-                                  FontWeight
-                                      .bold,
+                                  FontWeight.bold,
                               color: Colors
                                   .grey
                                   .shade800,
@@ -629,10 +714,14 @@ class _ProdukAdminPageState
                           height: 10,
                         ),
 
+                        // ======================================
+                        // PREVIEW FOTO
+                        // ======================================
+
                         Container(
                           width:
                               double.infinity,
-                          height: 210,
+                          height: 190,
                           decoration:
                               BoxDecoration(
                             color: AppTheme
@@ -653,13 +742,15 @@ class _ProdukAdminPageState
                                       null
                                   ? ClipRRect(
                                       borderRadius:
-                                          BorderRadius.circular(
+                                          BorderRadius
+                                              .circular(
                                         16,
                                       ),
                                       child:
                                           Image.memory(
                                         selectedBytes!,
-                                        fit: BoxFit.cover,
+                                        fit: BoxFit
+                                            .cover,
                                       ),
                                     )
                                   : fotoUrl
@@ -667,13 +758,15 @@ class _ProdukAdminPageState
                                           .isNotEmpty
                                       ? ClipRRect(
                                           borderRadius:
-                                              BorderRadius.circular(
+                                              BorderRadius
+                                                  .circular(
                                             16,
                                           ),
                                           child:
                                               Image.network(
                                             fotoUrl,
-                                            fit: BoxFit.cover,
+                                            fit: BoxFit
+                                                .cover,
                                             errorBuilder:
                                                 (
                                               context,
@@ -686,7 +779,7 @@ class _ProdukAdminPageState
                                                   Icons
                                                       .broken_image_outlined,
                                                   size:
-                                                      60,
+                                                      55,
                                                   color:
                                                       AppTheme.primary,
                                                 ),
@@ -700,7 +793,7 @@ class _ProdukAdminPageState
                                             Icons
                                                 .add_photo_alternate_outlined,
                                             size:
-                                                65,
+                                                60,
                                             color:
                                                 AppTheme.primary,
                                           ),
@@ -710,6 +803,10 @@ class _ProdukAdminPageState
                         const SizedBox(
                           height: 12,
                         ),
+
+                        // ======================================
+                        // PILIH FOTO
+                        // ======================================
 
                         SizedBox(
                           width:
@@ -741,6 +838,10 @@ class _ProdukAdminPageState
                         const SizedBox(
                           height: 16,
                         ),
+
+                        // ======================================
+                        // URUTAN
+                        // ======================================
 
                         TextFormField(
                           controller:
@@ -783,6 +884,10 @@ class _ProdukAdminPageState
                 ),
               ),
 
+              // ==================================================
+              // ACTION DIALOG
+              // ==================================================
+
               actions: [
                 TextButton(
                   onPressed: uploading
@@ -797,10 +902,9 @@ class _ProdukAdminPageState
                 ),
 
                 ElevatedButton.icon(
-                  onPressed:
-                      uploading
-                          ? null
-                          : simpan,
+                  onPressed: uploading
+                      ? null
+                      : simpan,
                   icon: uploading
                       ? const SizedBox(
                           width: 18,
@@ -828,6 +932,10 @@ class _ProdukAdminPageState
       },
     );
 
+    // ============================================================
+    // DISPOSE CONTROLLER
+    // ============================================================
+
     namaController.dispose();
     pemilikController.dispose();
     alamatController.dispose();
@@ -835,6 +943,10 @@ class _ProdukAdminPageState
     deskripsiController.dispose();
     urutanController.dispose();
   }
+
+  // ============================================================
+  // HAPUS PRODUK
+  // ============================================================
 
   Future<void> _hapusProduk(
     Produk produk,
@@ -844,11 +956,15 @@ class _ProdukAdminPageState
       context: context,
       builder: (context) {
         return AlertDialog(
-          title:
-              const Text('Hapus Produk'),
-          content: Text(
-            'Yakin ingin menghapus produk "${produk.nama}"?',
+          title: const Text(
+            'Hapus Produk',
           ),
+
+          content: Text(
+            'Yakin ingin menghapus produk '
+            '"${produk.nama}"?',
+          ),
+
           actions: [
             TextButton(
               onPressed: () {
@@ -858,11 +974,14 @@ class _ProdukAdminPageState
               child:
                   const Text('Batal'),
             ),
+
             ElevatedButton(
               style:
                   ElevatedButton.styleFrom(
                 backgroundColor:
                     Colors.red,
+                foregroundColor:
+                    Colors.white,
               ),
               onPressed: () {
                 Navigator.of(context)
@@ -903,6 +1022,8 @@ class _ProdukAdminPageState
           content: Text(
             'Produk berhasil dihapus.',
           ),
+          backgroundColor:
+              Colors.green,
         ),
       );
     } catch (e) {
@@ -916,14 +1037,19 @@ class _ProdukAdminPageState
           content: Text(
             'Gagal menghapus produk: $e',
           ),
+          backgroundColor:
+              Colors.red,
         ),
       );
     }
   }
 }
 
-class _ProdukItem
-    extends StatelessWidget {
+// ==================================================================
+// ITEM PRODUK
+// ==================================================================
+
+class _ProdukItem extends StatelessWidget {
   final Produk produk;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
@@ -936,155 +1062,274 @@ class _ProdukItem
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin:
-          const EdgeInsets.only(
-        bottom: 18,
-      ),
-      padding:
-          const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius:
-            BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color:
-                Colors.black.withOpacity(
-              0.05,
+    return LayoutBuilder(
+      builder: (
+        context,
+        constraints,
+      ) {
+        final isMobile =
+            constraints.maxWidth < 600;
+
+        return Container(
+          margin:
+              const EdgeInsets.only(
+            bottom: 18,
+          ),
+
+          padding: EdgeInsets.all(
+            isMobile ? 14 : 18,
+          ),
+
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius:
+                BorderRadius.circular(
+              isMobile ? 18 : 20,
             ),
-            blurRadius: 15,
-            offset:
-                const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
-        children: [
-          _fotoProduk(),
-
-          const SizedBox(
-            width: 20,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black
+                    .withOpacity(0.05),
+                blurRadius: 15,
+                offset:
+                    const Offset(0, 5),
+              ),
+            ],
           ),
 
-          Expanded(
-            child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment
-                      .start,
-              children: [
-                Text(
-                  produk.nama,
-                  style:
-                      const TextStyle(
-                    fontSize: 21,
-                    fontWeight:
-                        FontWeight.bold,
-                    color:
-                        AppTheme.primary,
-                  ),
-                ),
+          child: isMobile
+              ? _mobileLayout()
+              : _desktopLayout(),
+        );
+      },
+    );
+  }
 
-                const SizedBox(
-                  height: 10,
-                ),
+  // ============================================================
+  // DESKTOP
+  // ============================================================
 
-                if (produk.pemilik
-                    .isNotEmpty)
-                  _info(
-                    Icons
-                        .person_outline,
-                    produk.pemilik,
-                  ),
+  Widget _desktopLayout() {
+    return Row(
+      crossAxisAlignment:
+          CrossAxisAlignment.start,
+      children: [
+        // FOTO
+        _fotoProduk(
+          width: 180,
+          height: 150,
+        ),
 
-                if (produk.alamat
-                    .isNotEmpty) ...[
-                  const SizedBox(
-                    height: 6,
-                  ),
-                  _info(
-                    Icons
-                        .location_on_outlined,
-                    produk.alamat,
-                  ),
-                ],
+        const SizedBox(width: 20),
 
-                if (produk.telepon
-                    .isNotEmpty) ...[
-                  const SizedBox(
-                    height: 6,
-                  ),
-                  _info(
-                    Icons
-                        .phone_outlined,
-                    produk.telepon,
-                  ),
-                ],
+        // INFORMASI
+        Expanded(
+          child: _informasiProduk(),
+        ),
 
-                if (produk.deskripsi
-                    .isNotEmpty) ...[
-                  const SizedBox(
-                    height: 12,
-                  ),
-                  Text(
-                    produk.deskripsi,
-                    maxLines: 3,
-                    overflow:
-                        TextOverflow
-                            .ellipsis,
-                    style:
-                        const TextStyle(
-                      color:
-                          Colors.black54,
-                      height: 1.5,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
+        const SizedBox(width: 15),
 
-          const SizedBox(
-            width: 15,
-          ),
+        // AKSI
+        _actionButtons(),
+      ],
+    );
+  }
 
-          Column(
-            children: [
-              IconButton(
-                tooltip: 'Edit',
-                onPressed: onEdit,
-                icon: const Icon(
-                  Icons
-                      .edit_outlined,
+  // ============================================================
+  // MOBILE
+  // ============================================================
+
+  Widget _mobileLayout() {
+    return Column(
+      crossAxisAlignment:
+          CrossAxisAlignment.start,
+      children: [
+        // ======================================================
+        // JUDUL + TOMBOL AKSI
+        // ======================================================
+
+        Row(
+          crossAxisAlignment:
+              CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Text(
+                produk.nama,
+                maxLines: 2,
+                overflow:
+                    TextOverflow.ellipsis,
+                style:
+                    const TextStyle(
+                  fontSize: 20,
+                  fontWeight:
+                      FontWeight.bold,
                   color:
                       AppTheme.primary,
                 ),
               ),
+            ),
 
-              IconButton(
-                tooltip: 'Hapus',
-                onPressed: onDelete,
-                icon: const Icon(
-                  Icons
-                      .delete_outline,
-                  color: Colors.red,
+            const SizedBox(width: 8),
+
+            Row(
+              mainAxisSize:
+                  MainAxisSize.min,
+              children: [
+                _smallActionButton(
+                  icon:
+                      Icons.edit_outlined,
+                  color:
+                      AppTheme.primary,
+                  onPressed: onEdit,
+                  tooltip: 'Edit',
                 ),
-              ),
-            ],
-          ),
-        ],
-      ),
+
+                _smallActionButton(
+                  icon:
+                      Icons.delete_outline,
+                  color: Colors.red,
+                  onPressed: onDelete,
+                  tooltip: 'Hapus',
+                ),
+              ],
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 14),
+
+        // ======================================================
+        // FOTO
+        // ======================================================
+
+        _fotoProduk(
+          width: double.infinity,
+          height: 190,
+        ),
+
+        const SizedBox(height: 16),
+
+        // ======================================================
+        // INFORMASI
+        // ======================================================
+
+        _informasiProduk(),
+      ],
     );
   }
 
-  Widget _fotoProduk() {
+  // ============================================================
+  // INFORMASI PRODUK
+  // ============================================================
+
+  Widget _informasiProduk() {
+    return Column(
+      crossAxisAlignment:
+          CrossAxisAlignment.start,
+      children: [
+        // Pada desktop nama berada di sini.
+        // Pada mobile nama sudah berada di header.
+        // Jadi tetap ditampilkan hanya jika diperlukan
+        // oleh layout desktop.
+        _desktopNama(),
+
+        if (produk.pemilik.isNotEmpty)
+          _info(
+            Icons.person_outline,
+            produk.pemilik,
+          ),
+
+        if (produk.alamat.isNotEmpty) ...[
+          const SizedBox(height: 8),
+
+          _info(
+            Icons.location_on_outlined,
+            produk.alamat,
+          ),
+        ],
+
+        if (produk.telepon.isNotEmpty) ...[
+          const SizedBox(height: 8),
+
+          _info(
+            Icons.phone_outlined,
+            produk.telepon,
+          ),
+        ],
+
+        if (produk.deskripsi.isNotEmpty) ...[
+          const SizedBox(height: 12),
+
+          Text(
+            produk.deskripsi,
+            maxLines: 4,
+            overflow:
+                TextOverflow.ellipsis,
+            style:
+                const TextStyle(
+              color: Colors.black54,
+              fontSize: 14,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  // ============================================================
+  // NAMA UNTUK DESKTOP
+  // ============================================================
+
+  Widget _desktopNama() {
+    return Builder(
+      builder: (context) {
+        final width =
+            MediaQuery.of(context)
+                .size
+                .width;
+
+        if (width < 600) {
+          return const SizedBox.shrink();
+        }
+
+        return Column(
+          children: [
+            Text(
+              produk.nama,
+              maxLines: 2,
+              overflow:
+                  TextOverflow.ellipsis,
+              style:
+                  const TextStyle(
+                fontSize: 21,
+                fontWeight:
+                    FontWeight.bold,
+                color:
+                    AppTheme.primary,
+              ),
+            ),
+
+            const SizedBox(height: 10),
+          ],
+        );
+      },
+    );
+  }
+
+  // ============================================================
+  // FOTO PRODUK
+  // ============================================================
+
+  Widget _fotoProduk({
+    required double width,
+    required double height,
+  }) {
     return Container(
-      width: 180,
-      height: 150,
-      decoration:
-          BoxDecoration(
+      width: width,
+      height: height,
+
+      decoration: BoxDecoration(
         color:
             AppTheme.lightGreen,
         borderRadius:
@@ -1092,6 +1337,7 @@ class _ProdukItem
           16,
         ),
       ),
+
       child: produk.fotoUrl
               .trim()
               .isNotEmpty
@@ -1100,11 +1346,13 @@ class _ProdukItem
                   BorderRadius.circular(
                 16,
               ),
-              child: Image.network(
+
+              child:
+                  Image.network(
                 produk.fotoUrl,
                 fit: BoxFit.cover,
-                errorBuilder:
-                    (
+
+                errorBuilder: (
                   context,
                   error,
                   stackTrace,
@@ -1133,6 +1381,67 @@ class _ProdukItem
     );
   }
 
+  // ============================================================
+  // TOMBOL AKSI DESKTOP
+  // ============================================================
+
+  Widget _actionButtons() {
+    return Column(
+      mainAxisSize:
+          MainAxisSize.min,
+      children: [
+        IconButton(
+          tooltip: 'Edit',
+          onPressed: onEdit,
+          icon: const Icon(
+            Icons.edit_outlined,
+            color:
+                AppTheme.primary,
+          ),
+        ),
+
+        IconButton(
+          tooltip: 'Hapus',
+          onPressed: onDelete,
+          icon: const Icon(
+            Icons.delete_outline,
+            color: Colors.red,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ============================================================
+  // TOMBOL AKSI MOBILE
+  // ============================================================
+
+  Widget _smallActionButton({
+    required IconData icon,
+    required Color color,
+    required VoidCallback onPressed,
+    required String tooltip,
+  }) {
+    return SizedBox(
+      width: 38,
+      height: 38,
+      child: IconButton(
+        tooltip: tooltip,
+        padding: EdgeInsets.zero,
+        onPressed: onPressed,
+        icon: Icon(
+          icon,
+          size: 21,
+          color: color,
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // INFO ITEM
+  // ============================================================
+
   Widget _info(
     IconData icon,
     String text,
@@ -1143,21 +1452,22 @@ class _ProdukItem
       children: [
         Icon(
           icon,
-          size: 18,
+          size: 19,
           color:
               AppTheme.primary,
         ),
-        const SizedBox(
-          width: 8,
-        ),
+
+        const SizedBox(width: 9),
+
         Expanded(
           child: Text(
             text,
+            softWrap: true,
             style:
                 const TextStyle(
-              color:
-                  Colors.black54,
+              color: Colors.black54,
               fontSize: 14,
+              height: 1.45,
             ),
           ),
         ),

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import '../../config/app_theme.dart';
 import '../../services/pengaturan_service.dart';
 
@@ -61,7 +60,7 @@ class _PengaturanAdminPageState
       TextEditingController();
 
   // ============================================================
-  // FOOTER
+  // FOOTER / INFORMASI KONTAK
   // ============================================================
 
   final _footerDeskripsiController =
@@ -76,15 +75,25 @@ class _PengaturanAdminPageState
   final _footerEmailController =
       TextEditingController();
 
+  final _footerJamOperasionalController =
+      TextEditingController();
+
   final _footerCopyrightController =
       TextEditingController();
+
+  // ============================================================
+  // INIT
+  // ============================================================
 
   @override
   void initState() {
     super.initState();
-
     _loadPengaturan();
   }
+
+  // ============================================================
+  // DISPOSE
+  // ============================================================
 
   @override
   void dispose() {
@@ -104,6 +113,7 @@ class _PengaturanAdminPageState
     _footerAlamatController.dispose();
     _footerTeleponController.dispose();
     _footerEmailController.dispose();
+    _footerJamOperasionalController.dispose();
     _footerCopyrightController.dispose();
 
     super.dispose();
@@ -119,6 +129,10 @@ class _PengaturanAdminPageState
           await _pengaturanService.getPengaturan();
 
       if (data != null) {
+        // ======================================================
+        // INFORMASI DESA
+        // ======================================================
+
         _namaDesaController.text =
             data['namaDesa']?.toString() ?? '';
 
@@ -128,7 +142,10 @@ class _PengaturanAdminPageState
         _kabupatenController.text =
             data['kabupaten']?.toString() ?? '';
 
-        // Statistik
+        // ======================================================
+        // STATISTIK DESA
+        // ======================================================
+
         _jumlahPendudukController.text =
             data['jumlahPenduduk']?.toString() ?? '';
 
@@ -141,14 +158,20 @@ class _PengaturanAdminPageState
         _jumlahRtRwController.text =
             data['jumlahRtRw']?.toString() ?? '';
 
-        // Video
+        // ======================================================
+        // VIDEO PROFIL
+        // ======================================================
+
         _videoJudulController.text =
             data['videoJudul']?.toString() ?? '';
 
         _videoUrlController.text =
             data['videoUrl']?.toString() ?? '';
 
-        // Footer
+        // ======================================================
+        // FOOTER / KONTAK
+        // ======================================================
+
         _footerDeskripsiController.text =
             data['footerDeskripsi']?.toString() ?? '';
 
@@ -161,6 +184,9 @@ class _PengaturanAdminPageState
         _footerEmailController.text =
             data['footerEmail']?.toString() ?? '';
 
+        _footerJamOperasionalController.text =
+            data['footerJamOperasional']?.toString() ?? '';
+
         _footerCopyrightController.text =
             data['footerCopyright']?.toString() ?? '';
       }
@@ -172,6 +198,7 @@ class _PengaturanAdminPageState
           content: Text(
             'Gagal memuat pengaturan: $e',
           ),
+          backgroundColor: Colors.red,
         ),
       );
     } finally {
@@ -198,36 +225,64 @@ class _PengaturanAdminPageState
 
     try {
       await _pengaturanService.savePengaturan(
-        // Informasi desa
-        namaDesa: _namaDesaController.text.trim(),
-        kecamatan: _kecamatanController.text.trim(),
-        kabupaten: _kabupatenController.text.trim(),
+        // ======================================================
+        // INFORMASI DESA
+        // ======================================================
 
-        // Statistik
+        namaDesa:
+            _namaDesaController.text.trim(),
+
+        kecamatan:
+            _kecamatanController.text.trim(),
+
+        kabupaten:
+            _kabupatenController.text.trim(),
+
+        // ======================================================
+        // STATISTIK DESA
+        // ======================================================
+
         jumlahPenduduk:
             _jumlahPendudukController.text.trim(),
+
         jumlahKeluarga:
             _jumlahKeluargaController.text.trim(),
+
         jumlahDusun:
             _jumlahDusunController.text.trim(),
+
         jumlahRtRw:
             _jumlahRtRwController.text.trim(),
 
-        // Video
+        // ======================================================
+        // VIDEO PROFIL
+        // ======================================================
+
         videoJudul:
             _videoJudulController.text.trim(),
+
         videoUrl:
             _videoUrlController.text.trim(),
 
-        // Footer
+        // ======================================================
+        // FOOTER / KONTAK
+        // ======================================================
+
         footerDeskripsi:
             _footerDeskripsiController.text.trim(),
+
         footerAlamat:
             _footerAlamatController.text.trim(),
+
         footerTelepon:
             _footerTeleponController.text.trim(),
+
         footerEmail:
             _footerEmailController.text.trim(),
+
+        footerJamOperasional:
+            _footerJamOperasionalController.text.trim(),
+
         footerCopyright:
             _footerCopyrightController.text.trim(),
       );
@@ -288,8 +343,7 @@ class _PengaturanAdminPageState
               padding: const EdgeInsets.all(25),
               child: Center(
                 child: ConstrainedBox(
-                  constraints:
-                      const BoxConstraints(
+                  constraints: const BoxConstraints(
                     maxWidth: 850,
                   ),
                   child: Form(
@@ -298,6 +352,7 @@ class _PengaturanAdminPageState
                       crossAxisAlignment:
                           CrossAxisAlignment.start,
                       children: [
+
                         // ==================================================
                         // JUDUL
                         // ==================================================
@@ -389,7 +444,8 @@ class _PengaturanAdminPageState
                           controller:
                               _jumlahPendudukController,
                           label: 'Jumlah Penduduk',
-                          icon: Icons.people_outline,
+                          icon:
+                              Icons.people_outline,
                           keyboardType:
                               TextInputType.number,
                         ),
@@ -399,8 +455,10 @@ class _PengaturanAdminPageState
                         _field(
                           controller:
                               _jumlahKeluargaController,
-                          label: 'Jumlah Kepala Keluarga',
-                          icon: Icons.home_outlined,
+                          label:
+                              'Jumlah Kepala Keluarga',
+                          icon:
+                              Icons.home_outlined,
                           keyboardType:
                               TextInputType.number,
                         ),
@@ -423,7 +481,8 @@ class _PengaturanAdminPageState
                           controller:
                               _jumlahRtRwController,
                           label: 'Jumlah RT / RW',
-                          icon: Icons.groups_outlined,
+                          icon:
+                              Icons.groups_outlined,
                           keyboardType:
                               TextInputType.number,
                         ),
@@ -458,8 +517,7 @@ class _PengaturanAdminPageState
                           controller:
                               _videoJudulController,
                           label: 'Judul Video',
-                          icon:
-                              Icons.title,
+                          icon: Icons.title,
                         ),
 
                         const SizedBox(height: 18),
@@ -468,8 +526,7 @@ class _PengaturanAdminPageState
                           controller:
                               _videoUrlController,
                           label: 'Link Video',
-                          icon:
-                              Icons.link,
+                          icon: Icons.link,
                           keyboardType:
                               TextInputType.url,
                           maxLines: 2,
@@ -478,22 +535,23 @@ class _PengaturanAdminPageState
                         const SizedBox(height: 35),
 
                         // ==================================================
-                        // FOOTER
+                        // INFORMASI KONTAK / FOOTER
                         // ==================================================
 
                         _sectionTitle(
-                          'Informasi Footer',
-                          Icons.web,
+                          'Informasi Kontak',
+                          Icons.contact_phone_outlined,
                         ),
 
                         const SizedBox(height: 8),
 
                         const Text(
-                          'Informasi berikut akan ditampilkan pada '
-                          'bagian bawah halaman utama website.',
+                          'Informasi berikut akan ditampilkan '
+                          'pada bagian Kontak di halaman utama website.',
                           style: TextStyle(
                             color: Colors.black54,
                             fontSize: 13,
+                            height: 1.5,
                           ),
                         ),
 
@@ -502,7 +560,7 @@ class _PengaturanAdminPageState
                         _field(
                           controller:
                               _footerDeskripsiController,
-                          label: 'Deskripsi Footer',
+                          label: 'Deskripsi Kontak',
                           icon:
                               Icons.description_outlined,
                           maxLines: 3,
@@ -545,6 +603,31 @@ class _PengaturanAdminPageState
 
                         const SizedBox(height: 18),
 
+                        // ==================================================
+                        // JAM OPERASIONAL
+                        // ==================================================
+
+                        _field(
+                          controller:
+                              _footerJamOperasionalController,
+                          label: 'Jam Operasional',
+                          icon:
+                              Icons.access_time_outlined,
+                          maxLines: 2,
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        const Text(
+                          'Contoh: Senin - Jumat: 08.00 - 15.00',
+                          style: TextStyle(
+                            color: Colors.black54,
+                            fontSize: 12,
+                          ),
+                        ),
+
+                        const SizedBox(height: 18),
+
                         _field(
                           controller:
                               _footerCopyrightController,
@@ -565,6 +648,7 @@ class _PengaturanAdminPageState
                             onPressed: _isSaving
                                 ? null
                                 : _simpanPengaturan,
+
                             icon: _isSaving
                                 ? const SizedBox(
                                     width: 20,
@@ -578,6 +662,7 @@ class _PengaturanAdminPageState
                                 : const Icon(
                                     Icons.save,
                                   ),
+
                             label: Padding(
                               padding:
                                   const EdgeInsets.symmetric(
@@ -660,21 +745,27 @@ class _PengaturanAdminPageState
       controller: controller,
       maxLines: maxLines,
       keyboardType: keyboardType,
+
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon),
+
         border: OutlineInputBorder(
           borderRadius:
               BorderRadius.circular(14),
         ),
-        enabledBorder: OutlineInputBorder(
+
+        enabledBorder:
+            OutlineInputBorder(
           borderRadius:
               BorderRadius.circular(14),
           borderSide: BorderSide(
             color: Colors.grey.shade300,
           ),
         ),
-        focusedBorder: OutlineInputBorder(
+
+        focusedBorder:
+            OutlineInputBorder(
           borderRadius:
               BorderRadius.circular(14),
           borderSide: const BorderSide(
@@ -683,6 +774,7 @@ class _PengaturanAdminPageState
           ),
         ),
       ),
+
       validator: (value) {
         if (value == null ||
             value.trim().isEmpty) {
