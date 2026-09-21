@@ -23,7 +23,6 @@ class StorageService {
     void Function(double progress)? onProgress,
   }) async {
     try {
-      // Mulai progress
       onProgress?.call(0);
 
       final uri = Uri.parse(
@@ -35,13 +34,9 @@ class StorageService {
         uri,
       );
 
-      // Upload preset Cloudinary
       request.fields['upload_preset'] = uploadPreset;
-
-      // Folder penyimpanan
       request.fields['folder'] = folder;
 
-      // File foto
       request.files.add(
         http.MultipartFile.fromBytes(
           'file',
@@ -50,9 +45,6 @@ class StorageService {
         ),
       );
 
-      // Karena http.MultipartRequest tidak memberikan
-      // progress upload secara langsung, kita tampilkan
-      // status mulai dan selesai.
       onProgress?.call(0.1);
 
       final streamedResponse = await request.send();
@@ -98,6 +90,23 @@ class StorageService {
   }
 
   // ============================================================
+  // UPLOAD LOGO DESA
+  // ============================================================
+
+  Future<String> uploadLogoDesa({
+    required Uint8List bytes,
+    required String fileName,
+    void Function(double progress)? onProgress,
+  }) {
+    return uploadFoto(
+      bytes: bytes,
+      fileName: fileName,
+      folder: 'desa-tembarak/logo',
+      onProgress: onProgress,
+    );
+  }
+
+  // ============================================================
   // FOTO PERANGKAT DESA
   // ============================================================
 
@@ -132,26 +141,6 @@ class StorageService {
   }
 
   // ============================================================
-  // HAPUS FOTO
-  // ============================================================
-
-  Future<void> hapusFoto(
-    String fotoUrl,
-  ) async {
-    if (fotoUrl.trim().isEmpty) {
-      return;
-    }
-
-    // Tidak menghapus file Cloudinary dari Flutter Web.
-    //
-    // Penghapusan Cloudinary membutuhkan autentikasi
-    // server-side/API Secret sehingga tidak aman
-    // jika dilakukan langsung dari browser.
-    //
-    // Untuk sekarang foto lama dibiarkan di Cloudinary.
-  }
-
-  // ============================================================
   // FOTO BERITA
   // ============================================================
 
@@ -160,11 +149,11 @@ class StorageService {
     required String fileName,
     void Function(double progress)? onProgress,
   }) {
-  return uploadFoto(
-    bytes: bytes,
-    fileName: fileName,
-    folder: 'desa-tembarak/berita',
-    onProgress: onProgress,
+    return uploadFoto(
+      bytes: bytes,
+      fileName: fileName,
+      folder: 'desa-tembarak/berita',
+      onProgress: onProgress,
     );
   }
 
@@ -183,5 +172,20 @@ class StorageService {
       folder: 'desa-tembarak/galeri',
       onProgress: onProgress,
     );
+  }
+
+  // ============================================================
+  // HAPUS FOTO
+  // ============================================================
+
+  Future<void> hapusFoto(
+    String fotoUrl,
+  ) async {
+    if (fotoUrl.trim().isEmpty) {
+      return;
+    }
+
+    // Penghapusan Cloudinary membutuhkan API Secret.
+    // Jangan menyimpan API Secret di Flutter Web.
   }
 }

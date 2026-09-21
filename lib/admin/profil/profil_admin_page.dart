@@ -1,7 +1,9 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../../config/app_theme.dart';
 import '../../services/profil_service.dart';
+import '../../services/storage_service.dart';
 
 class ProfilAdminPage extends StatefulWidget {
   const ProfilAdminPage({super.key});
@@ -12,6 +14,7 @@ class ProfilAdminPage extends StatefulWidget {
 
 class _ProfilAdminPageState extends State<ProfilAdminPage> {
   final ProfilService _profilService = ProfilService();
+  final StorageService _storageService = StorageService();
 
   // =========================
   // CONTROLLERS
@@ -26,11 +29,15 @@ class _ProfilAdminPageState extends State<ProfilAdminPage> {
   final _visiController = TextEditingController();
   final _misiController = TextEditingController();
 
-  final _kondisiController = TextEditingController();
-  final _potensiController = TextEditingController();
+  // FILOSOFI LOGO
+  final _filosofiLogoController = TextEditingController();
+
+  // URL LOGO
+  String _logoUrl = '';
 
   bool _isLoading = true;
   bool _isSaving = false;
+  bool _isUploadingLogo = false;
 
   // =========================
   // INIT
@@ -57,8 +64,7 @@ class _ProfilAdminPageState extends State<ProfilAdminPage> {
     _visiController.dispose();
     _misiController.dispose();
 
-    _kondisiController.dispose();
-    _potensiController.dispose();
+    _filosofiLogoController.dispose();
 
     super.dispose();
   }
@@ -95,11 +101,11 @@ class _ProfilAdminPageState extends State<ProfilAdminPage> {
         _misiController.text =
             data['misi']?.toString() ?? '';
 
-        _kondisiController.text =
-            data['kondisi']?.toString() ?? '';
+        _logoUrl =
+            data['logoUrl']?.toString() ?? '';
 
-        _potensiController.text =
-            data['potensi']?.toString() ?? '';
+        _filosofiLogoController.text =
+            data['filosofiLogo']?.toString() ?? '';
       }
     } catch (e) {
       if (!mounted) return;
@@ -119,6 +125,80 @@ class _ProfilAdminPageState extends State<ProfilAdminPage> {
         });
       }
     }
+  }
+
+  // =========================
+  // UPLOAD LOGO DESA
+  // =========================
+
+  Future<void> _uploadLogoDesa() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        withData: true,
+      );
+
+      if (result == null) {
+        return;
+      }
+
+      final file = result.files.single;
+
+      if (file.bytes == null) {
+        _showMessage(
+          'File logo tidak dapat dibaca.',
+          isError: true,
+        );
+        return;
+      }
+
+      setState(() {
+        _isUploadingLogo = true;
+      });
+
+      final url = await _storageService.uploadFoto(
+        bytes: file.bytes!,
+        fileName: file.name,
+        folder: 'desa-tembarak/logo',
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _logoUrl = url;
+      });
+
+      _showMessage(
+        'Logo desa berhasil diupload. Jangan lupa klik Simpan Profil Desa.',
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      _showMessage(
+        'Gagal mengupload logo desa: $e',
+        isError: true,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploadingLogo = false;
+        });
+      }
+    }
+  }
+
+  // =========================
+  // HAPUS LOGO DARI FORM
+  // =========================
+
+  void _removeLogo() {
+    setState(() {
+      _logoUrl = '';
+    });
+
+    _showMessage(
+      'Logo dihapus dari form. Klik Simpan Profil Desa untuk menyimpan perubahan.',
+    );
   }
 
   // =========================
@@ -147,8 +227,9 @@ class _ProfilAdminPageState extends State<ProfilAdminPage> {
         sejarah: _sejarahController.text.trim(),
         visi: _visiController.text.trim(),
         misi: _misiController.text.trim(),
-        kondisi: _kondisiController.text.trim(),
-        potensi: _potensiController.text.trim(),
+        logoUrl: _logoUrl.trim(),
+        filosofiLogo:
+            _filosofiLogoController.text.trim(),
       );
 
       if (!mounted) return;
@@ -230,6 +311,7 @@ class _ProfilAdminPageState extends State<ProfilAdminPage> {
                     crossAxisAlignment:
                         CrossAxisAlignment.start,
                     children: [
+
                       // =========================
                       // HEADER
                       // =========================
@@ -268,8 +350,10 @@ class _ProfilAdminPageState extends State<ProfilAdminPage> {
                               controller:
                                   _namaDesaController,
                               label: 'Nama Desa',
-                              hint: 'Masukkan nama desa',
-                              icon: Icons.home_outlined,
+                              hint:
+                                  'Masukkan nama desa',
+                              icon:
+                                  Icons.home_outlined,
                             ),
 
                             const SizedBox(height: 18),
@@ -292,7 +376,8 @@ class _ProfilAdminPageState extends State<ProfilAdminPage> {
                               label: 'Kabupaten',
                               hint:
                                   'Masukkan nama kabupaten',
-                              icon: Icons.map_outlined,
+                              icon:
+                                  Icons.map_outlined,
                             ),
 
                             const SizedBox(height: 18),
@@ -303,7 +388,8 @@ class _ProfilAdminPageState extends State<ProfilAdminPage> {
                               label: 'Provinsi',
                               hint:
                                   'Masukkan nama provinsi',
-                              icon: Icons.public_outlined,
+                              icon:
+                                  Icons.public_outlined,
                             ),
                           ],
                         ),
@@ -317,9 +403,11 @@ class _ProfilAdminPageState extends State<ProfilAdminPage> {
 
                       _sectionCard(
                         title: 'Sejarah Desa',
-                        icon: Icons.history_edu_outlined,
+                        icon:
+                            Icons.history_edu_outlined,
                         child: _textField(
-                          controller: _sejarahController,
+                          controller:
+                              _sejarahController,
                           label: 'Sejarah Desa',
                           hint:
                               'Tuliskan sejarah Desa...',
@@ -335,11 +423,13 @@ class _ProfilAdminPageState extends State<ProfilAdminPage> {
 
                       _sectionCard(
                         title: 'Visi & Misi',
-                        icon: Icons.visibility_outlined,
+                        icon:
+                            Icons.visibility_outlined,
                         child: Column(
                           children: [
                             _textField(
-                              controller: _visiController,
+                              controller:
+                                  _visiController,
                               label: 'Visi Desa',
                               hint:
                                   'Tuliskan visi desa...',
@@ -349,7 +439,8 @@ class _ProfilAdminPageState extends State<ProfilAdminPage> {
                             const SizedBox(height: 18),
 
                             _textField(
-                              controller: _misiController,
+                              controller:
+                                  _misiController,
                               label: 'Misi Desa',
                               hint:
                                   'Tuliskan misi desa...',
@@ -362,32 +453,182 @@ class _ProfilAdminPageState extends State<ProfilAdminPage> {
                       const SizedBox(height: 25),
 
                       // =========================
-                      // KONDISI & POTENSI
+                      // LOGO & FILOSOFI LOGO
                       // =========================
 
                       _sectionCard(
-                        title: 'Kondisi & Potensi Desa',
-                        icon: Icons.landscape_outlined,
+                        title:
+                            'Logo & Filosofi Logo Desa',
+                        icon:
+                            Icons.shield_outlined,
                         child: Column(
+                          crossAxisAlignment:
+                              CrossAxisAlignment.start,
                           children: [
-                            _textField(
-                              controller:
-                                  _kondisiController,
-                              label: 'Kondisi Desa',
-                              hint:
-                                  'Tuliskan kondisi umum desa...',
-                              maxLines: 7,
+
+                            const Text(
+                              'Logo Desa',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight:
+                                    FontWeight.w600,
+                              ),
                             ),
 
-                            const SizedBox(height: 18),
+                            const SizedBox(height: 12),
+
+                            // =========================
+                            // PREVIEW LOGO
+                            // =========================
+
+                            Container(
+                              width: double.infinity,
+                              height: 240,
+                              decoration:
+                                  BoxDecoration(
+                                color:
+                                    AppTheme.lightGreen,
+                                borderRadius:
+                                    BorderRadius
+                                        .circular(16),
+                                border: Border.all(
+                                  color:
+                                      Colors.black12,
+                                ),
+                              ),
+                              child: _logoUrl.isNotEmpty
+                                  ? ClipRRect(
+                                      borderRadius:
+                                          BorderRadius
+                                              .circular(
+                                                  16),
+                                      child:
+                                          Image.network(
+                                        _logoUrl,
+                                        fit:
+                                            BoxFit.contain,
+                                        errorBuilder:
+                                            (
+                                          context,
+                                          error,
+                                          stackTrace,
+                                        ) {
+                                          return const Center(
+                                            child: Icon(
+                                              Icons
+                                                  .broken_image_outlined,
+                                              size: 60,
+                                              color: Colors
+                                                  .black38,
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    )
+                                  : const Center(
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment
+                                                .center,
+                                        children: [
+                                          Icon(
+                                            Icons
+                                                .shield_outlined,
+                                            size: 65,
+                                            color: AppTheme
+                                                .primary,
+                                          ),
+                                          SizedBox(
+                                            height: 10,
+                                          ),
+                                          Text(
+                                            'Belum ada logo desa',
+                                            style:
+                                                TextStyle(
+                                              color: Colors
+                                                  .black54,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                            ),
+
+                            const SizedBox(height: 15),
+
+                            // =========================
+                            // BUTTON LOGO
+                            // =========================
+
+                            Row(
+                              children: [
+
+                                OutlinedButton.icon(
+                                  onPressed:
+                                      _isUploadingLogo
+                                          ? null
+                                          : _uploadLogoDesa,
+                                  icon: _isUploadingLogo
+                                      ? const SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child:
+                                              CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                      : const Icon(
+                                          Icons
+                                              .upload_outlined,
+                                        ),
+                                  label: Text(
+                                    _isUploadingLogo
+                                        ? 'Mengupload...'
+                                        : 'Upload Logo Desa',
+                                  ),
+                                ),
+
+                                if (_logoUrl
+                                    .isNotEmpty) ...[
+                                  const SizedBox(width: 10),
+
+                                  OutlinedButton.icon(
+                                    onPressed:
+                                        _isUploadingLogo
+                                            ? null
+                                            : _removeLogo,
+                                    icon: const Icon(
+                                      Icons
+                                          .delete_outline,
+                                      color: Colors.red,
+                                    ),
+                                    label:
+                                        const Text(
+                                      'Hapus',
+                                      style:
+                                          TextStyle(
+                                        color: Colors.red,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+
+                            const SizedBox(height: 25),
+
+                            // =========================
+                            // FILOSOFI LOGO
+                            // =========================
 
                             _textField(
                               controller:
-                                  _potensiController,
-                              label: 'Potensi Desa',
+                                  _filosofiLogoController,
+                              label:
+                                  'Filosofi Logo Desa',
                               hint:
-                                  'Tuliskan potensi desa...',
-                              maxLines: 7,
+                                  'Jelaskan makna dan filosofi setiap unsur pada logo desa...',
+                              maxLines: 10,
                             ),
                           ],
                         ),
@@ -401,11 +642,14 @@ class _ProfilAdminPageState extends State<ProfilAdminPage> {
 
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.all(20),
+                        padding:
+                            const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: AppTheme.lightGreen,
+                          color:
+                              AppTheme.lightGreen,
                           borderRadius:
-                              BorderRadius.circular(18),
+                              BorderRadius.circular(
+                                  18),
                         ),
                         child: const Row(
                           crossAxisAlignment:
@@ -413,7 +657,8 @@ class _ProfilAdminPageState extends State<ProfilAdminPage> {
                           children: [
                             Icon(
                               Icons.info_outline,
-                              color: AppTheme.primary,
+                              color:
+                                  AppTheme.primary,
                             ),
 
                             SizedBox(width: 15),
@@ -423,7 +668,8 @@ class _ProfilAdminPageState extends State<ProfilAdminPage> {
                                 'Informasi alamat kantor desa, nomor telepon, '
                                 'dan email dikelola melalui menu Pengaturan.',
                                 style: TextStyle(
-                                  color: AppTheme.primary,
+                                  color:
+                                      AppTheme.primary,
                                   height: 1.5,
                                 ),
                               ),
@@ -440,11 +686,11 @@ class _ProfilAdminPageState extends State<ProfilAdminPage> {
 
                       SizedBox(
                         width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed:
-                              _isSaving
-                                  ? null
-                                  : _saveProfil,
+                        child:
+                            ElevatedButton.icon(
+                          onPressed: _isSaving
+                              ? null
+                              : _saveProfil,
                           icon: _isSaving
                               ? const SizedBox(
                                   width: 20,
@@ -452,11 +698,13 @@ class _ProfilAdminPageState extends State<ProfilAdminPage> {
                                   child:
                                       CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    color: Colors.white,
+                                    color:
+                                        Colors.white,
                                   ),
                                 )
                               : const Icon(
-                                  Icons.save_outlined,
+                                  Icons
+                                      .save_outlined,
                                 ),
                           label: Text(
                             _isSaving
@@ -489,12 +737,15 @@ class _ProfilAdminPageState extends State<ProfilAdminPage> {
       padding: const EdgeInsets.all(25),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius:
+            BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color:
+                Colors.black.withOpacity(0.05),
             blurRadius: 18,
-            offset: const Offset(0, 6),
+            offset:
+                const Offset(0, 6),
           ),
         ],
       ),
@@ -508,13 +759,15 @@ class _ProfilAdminPageState extends State<ProfilAdminPage> {
                 width: 45,
                 height: 45,
                 decoration: BoxDecoration(
-                  color: AppTheme.lightGreen,
+                  color:
+                      AppTheme.lightGreen,
                   borderRadius:
                       BorderRadius.circular(13),
                 ),
                 child: Icon(
                   icon,
-                  color: AppTheme.primary,
+                  color:
+                      AppTheme.primary,
                 ),
               ),
 
@@ -525,8 +778,10 @@ class _ProfilAdminPageState extends State<ProfilAdminPage> {
                   title,
                   style: const TextStyle(
                     fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.primary,
+                    fontWeight:
+                        FontWeight.bold,
+                    color:
+                        AppTheme.primary,
                   ),
                 ),
               ),

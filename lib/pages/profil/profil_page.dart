@@ -11,7 +11,8 @@ class ProfilPage extends StatefulWidget {
 }
 
 class _ProfilPageState extends State<ProfilPage> {
-  final ProfilService _profilService = ProfilService();
+  final ProfilService _profilService =
+      ProfilService();
 
   Map<String, dynamic>? _profil;
 
@@ -24,9 +25,14 @@ class _ProfilPageState extends State<ProfilPage> {
     _loadProfil();
   }
 
+  // =====================================================
+  // LOAD PROFIL
+  // =====================================================
+
   Future<void> _loadProfil() async {
     try {
-      final data = await _profilService.getProfil();
+      final data =
+          await _profilService.getProfil();
 
       if (!mounted) return;
 
@@ -43,6 +49,10 @@ class _ProfilPageState extends State<ProfilPage> {
       });
     }
   }
+
+  // =====================================================
+  // GET DATA
+  // =====================================================
 
   String _getValue(
     String key,
@@ -61,8 +71,16 @@ class _ProfilPageState extends State<ProfilPage> {
     return value.toString();
   }
 
+  // =====================================================
+  // BUILD
+  // =====================================================
+
   @override
   Widget build(BuildContext context) {
+    // =====================================================
+    // LOADING
+    // =====================================================
+
     if (_isLoading) {
       return const Center(
         child: CircularProgressIndicator(
@@ -71,13 +89,20 @@ class _ProfilPageState extends State<ProfilPage> {
       );
     }
 
+    // =====================================================
+    // ERROR
+    // =====================================================
+
     if (_errorMessage != null) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(25),
+          padding:
+              const EdgeInsets.all(25),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment:
+                MainAxisAlignment.center,
             children: [
+
               const Icon(
                 Icons.error_outline,
                 color: Colors.red,
@@ -90,7 +115,8 @@ class _ProfilPageState extends State<ProfilPage> {
                 'Gagal Memuat Profil Desa',
                 style: TextStyle(
                   fontSize: 22,
-                  fontWeight: FontWeight.bold,
+                  fontWeight:
+                      FontWeight.bold,
                 ),
               ),
 
@@ -98,7 +124,8 @@ class _ProfilPageState extends State<ProfilPage> {
 
               Text(
                 _errorMessage!,
-                textAlign: TextAlign.center,
+                textAlign:
+                    TextAlign.center,
                 style: const TextStyle(
                   color: Colors.black54,
                 ),
@@ -115,8 +142,10 @@ class _ProfilPageState extends State<ProfilPage> {
 
                   _loadProfil();
                 },
-                icon: const Icon(Icons.refresh),
-                label: const Text('Coba Lagi'),
+                icon:
+                    const Icon(Icons.refresh),
+                label:
+                    const Text('Coba Lagi'),
               ),
             ],
           ),
@@ -163,14 +192,22 @@ class _ProfilPageState extends State<ProfilPage> {
       'Misi desa belum tersedia.',
     );
 
-    final kondisi = _getValue(
-      'kondisi',
-      'Kondisi desa belum tersedia.',
+    // =====================================================
+    // LOGO DESA
+    // =====================================================
+
+    final logoUrl = _getValue(
+      'logoUrl',
+      '',
     );
 
-    final potensi = _getValue(
-      'potensi',
-      'Potensi desa belum tersedia.',
+    // =====================================================
+    // FILOSOFI LOGO
+    // =====================================================
+
+    final filosofiLogo = _getValue(
+      'filosofiLogo',
+      'Filosofi logo desa belum tersedia.',
     );
 
     // =====================================================
@@ -181,7 +218,8 @@ class _ProfilPageState extends State<ProfilPage> {
       color: AppTheme.primary,
       onRefresh: _loadProfil,
       child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
+        physics:
+            const AlwaysScrollableScrollPhysics(),
         child: Column(
           children: [
 
@@ -191,56 +229,107 @@ class _ProfilPageState extends State<ProfilPage> {
 
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(
+              padding:
+                  const EdgeInsets.symmetric(
                 horizontal: 25,
                 vertical: 65,
               ),
-              decoration: const BoxDecoration(
-                color: AppTheme.lightGreen,
+              decoration:
+                  const BoxDecoration(
+                color:
+                    AppTheme.lightGreen,
               ),
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(
+                  constraints:
+                      const BoxConstraints(
                     maxWidth: 1100,
                   ),
                   child: Column(
                     children: [
 
-                      // ICON / LOGO SEMENTARA
+                      // ===============================
+                      // LOGO DESA
+                      // ===============================
+
                       Container(
-                        width: 90,
-                        height: 90,
-                        decoration: const BoxDecoration(
+                        width: 110,
+                        height: 110,
+                        padding:
+                            const EdgeInsets.all(
+                                10),
+                        decoration:
+                            const BoxDecoration(
                           color: Colors.white,
-                          shape: BoxShape.circle,
+                          shape:
+                              BoxShape.circle,
                         ),
-                        child: const Icon(
-                          Icons.account_balance,
-                          color: AppTheme.primary,
-                          size: 48,
-                        ),
+                        child: logoUrl
+                                .isNotEmpty
+                            ? ClipOval(
+                                child:
+                                    Image.network(
+                                  logoUrl,
+                                  fit: BoxFit
+                                      .contain,
+                                  errorBuilder:
+                                      (
+                                    context,
+                                    error,
+                                    stackTrace,
+                                  ) {
+                                    return const Icon(
+                                      Icons
+                                          .shield_outlined,
+                                      color: AppTheme
+                                          .primary,
+                                      size: 55,
+                                    );
+                                  },
+                                ),
+                              )
+                            : const Icon(
+                                Icons
+                                    .shield_outlined,
+                                color: AppTheme
+                                    .primary,
+                                size: 55,
+                              ),
                       ),
 
-                      const SizedBox(height: 22),
+                      const SizedBox(
+                        height: 22,
+                      ),
 
                       Text(
                         'Profil $namaDesa',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        textAlign:
+                            TextAlign.center,
+                        style:
+                            const TextStyle(
                           fontSize: 38,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.primary,
+                          fontWeight:
+                              FontWeight.bold,
+                          color:
+                              AppTheme.primary,
                         ),
                       ),
 
-                      const SizedBox(height: 12),
+                      const SizedBox(
+                        height: 12,
+                      ),
 
                       Text(
-                        '$kecamatan • $kabupaten • $provinsi',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        '$kecamatan • '
+                        '$kabupaten • '
+                        '$provinsi',
+                        textAlign:
+                            TextAlign.center,
+                        style:
+                            const TextStyle(
                           fontSize: 16,
-                          color: Colors.black54,
+                          color:
+                              Colors.black54,
                         ),
                       ),
                     ],
@@ -254,18 +343,21 @@ class _ProfilPageState extends State<ProfilPage> {
             // =================================================
 
             Padding(
-              padding: const EdgeInsets.symmetric(
+              padding:
+                  const EdgeInsets.symmetric(
                 horizontal: 25,
                 vertical: 45,
               ),
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(
+                  constraints:
+                      const BoxConstraints(
                     maxWidth: 1100,
                   ),
                   child: Column(
                     crossAxisAlignment:
-                        CrossAxisAlignment.start,
+                        CrossAxisAlignment
+                            .start,
                     children: [
 
                       // =================================================
@@ -273,121 +365,217 @@ class _ProfilPageState extends State<ProfilPage> {
                       // =================================================
 
                       const _SectionTitle(
-                        icon: Icons.history_edu_outlined,
-                        title: 'Sejarah Desa',
+                        icon: Icons
+                            .history_edu_outlined,
+                        title:
+                            'Sejarah Desa',
                       ),
 
-                      const SizedBox(height: 15),
+                      const SizedBox(
+                        height: 15,
+                      ),
 
                       _ContentCard(
                         child: Text(
                           sejarah,
-                          style: const TextStyle(
+                          style:
+                              const TextStyle(
                             fontSize: 15,
                             height: 1.8,
-                            color: Colors.black87,
+                            color:
+                                Colors.black87,
                           ),
                         ),
                       ),
 
-                      const SizedBox(height: 40),
+                      const SizedBox(
+                        height: 40,
+                      ),
 
                       // =================================================
                       // VISI
                       // =================================================
 
                       const _SectionTitle(
-                        icon: Icons.visibility_outlined,
+                        icon: Icons
+                            .visibility_outlined,
                         title: 'Visi',
                       ),
 
-                      const SizedBox(height: 15),
+                      const SizedBox(
+                        height: 15,
+                      ),
 
                       _ContentCard(
                         child: Text(
                           visi,
-                          style: const TextStyle(
+                          style:
+                              const TextStyle(
                             fontSize: 16,
                             height: 1.8,
-                            fontWeight: FontWeight.w500,
-                            color: AppTheme.primary,
+                            fontWeight:
+                                FontWeight.w500,
+                            color:
+                                AppTheme.primary,
                           ),
                         ),
                       ),
 
-                      const SizedBox(height: 40),
+                      const SizedBox(
+                        height: 40,
+                      ),
 
                       // =================================================
                       // MISI
                       // =================================================
 
                       const _SectionTitle(
-                        icon: Icons.flag_outlined,
+                        icon:
+                            Icons.flag_outlined,
                         title: 'Misi',
                       ),
 
-                      const SizedBox(height: 15),
+                      const SizedBox(
+                        height: 15,
+                      ),
 
                       _ContentCard(
                         child: Text(
                           misi,
-                          style: const TextStyle(
+                          style:
+                              const TextStyle(
                             fontSize: 15,
                             height: 1.8,
-                            color: Colors.black87,
+                            color:
+                                Colors.black87,
                           ),
                         ),
                       ),
 
-                      const SizedBox(height: 40),
+                      const SizedBox(
+                        height: 40,
+                      ),
 
                       // =================================================
-                      // KONDISI
+                      // LOGO DESA
                       // =================================================
 
                       const _SectionTitle(
-                        icon: Icons.location_city_outlined,
-                        title: 'Kondisi Desa',
+                        icon: Icons
+                            .shield_outlined,
+                        title:
+                            'Logo Desa',
                       ),
 
-                      const SizedBox(height: 15),
+                      const SizedBox(
+                        height: 15,
+                      ),
 
                       _ContentCard(
-                        child: Text(
-                          kondisi,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            height: 1.8,
-                            color: Colors.black87,
-                          ),
+                        child: Center(
+                          child: logoUrl
+                                  .isNotEmpty
+                              ? Image.network(
+                                  logoUrl,
+                                  height: 300,
+                                  fit: BoxFit
+                                      .contain,
+                                  errorBuilder:
+                                      (
+                                    context,
+                                    error,
+                                    stackTrace,
+                                  ) {
+                                    return const Column(
+                                      mainAxisSize:
+                                          MainAxisSize
+                                              .min,
+                                      children: [
+                                        Icon(
+                                          Icons
+                                              .broken_image_outlined,
+                                          size: 80,
+                                          color: Colors
+                                              .black38,
+                                        ),
+                                        SizedBox(
+                                          height: 10,
+                                        ),
+                                        Text(
+                                          'Logo desa tidak dapat dimuat.',
+                                          style:
+                                              TextStyle(
+                                            color: Colors
+                                                .black54,
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                )
+                              : const Column(
+                                  mainAxisSize:
+                                      MainAxisSize
+                                          .min,
+                                  children: [
+                                    Icon(
+                                      Icons
+                                          .shield_outlined,
+                                      size: 80,
+                                      color: AppTheme
+                                          .primary,
+                                    ),
+                                    SizedBox(
+                                      height: 10,
+                                    ),
+                                    Text(
+                                      'Logo desa belum tersedia.',
+                                      style:
+                                          TextStyle(
+                                        color: Colors
+                                            .black54,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                         ),
                       ),
 
-                      const SizedBox(height: 40),
+                      const SizedBox(
+                        height: 40,
+                      ),
 
                       // =================================================
-                      // POTENSI
+                      // FILOSOFI LOGO
                       // =================================================
 
                       const _SectionTitle(
-                        icon: Icons.eco_outlined,
-                        title: 'Potensi Desa',
+                        icon: Icons
+                            .menu_book_outlined,
+                        title:
+                            'Filosofi Logo Desa',
                       ),
 
-                      const SizedBox(height: 15),
+                      const SizedBox(
+                        height: 15,
+                      ),
 
                       _ContentCard(
                         child: Text(
-                          potensi,
-                          style: const TextStyle(
+                          filosofiLogo,
+                          style:
+                              const TextStyle(
                             fontSize: 15,
                             height: 1.8,
-                            color: Colors.black87,
+                            color:
+                                Colors.black87,
                           ),
                         ),
                       ),
 
-                      const SizedBox(height: 50),
+                      const SizedBox(
+                        height: 50,
+                      ),
 
                       // =================================================
                       // QUOTE
@@ -395,40 +583,54 @@ class _ProfilPageState extends State<ProfilPage> {
 
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.all(30),
-                        decoration: BoxDecoration(
-                          color: AppTheme.primary,
+                        padding:
+                            const EdgeInsets.all(
+                                30),
+                        decoration:
+                            BoxDecoration(
+                          color:
+                              AppTheme.primary,
                           borderRadius:
-                              BorderRadius.circular(22),
+                              BorderRadius
+                                  .circular(22),
                         ),
                         child: Column(
                           children: [
 
                             const Icon(
                               Icons.format_quote,
-                              color: Colors.white,
+                              color:
+                                  Colors.white,
                               size: 42,
                             ),
 
-                            const SizedBox(height: 12),
+                            const SizedBox(
+                              height: 12,
+                            ),
 
                             Text(
                               '“Bersama masyarakat, membangun '
                               '$namaDesa yang maju, mandiri, '
                               'dan sejahtera.”',
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              textAlign:
+                                  TextAlign.center,
+                              style:
+                                  const TextStyle(
+                                color:
+                                    Colors.white,
                                 fontSize: 18,
                                 height: 1.6,
-                                fontStyle: FontStyle.italic,
+                                fontStyle:
+                                    FontStyle.italic,
                               ),
                             ),
                           ],
                         ),
                       ),
 
-                      const SizedBox(height: 30),
+                      const SizedBox(
+                        height: 30,
+                      ),
                     ],
                   ),
                 ),
@@ -441,12 +643,12 @@ class _ProfilPageState extends State<ProfilPage> {
   }
 }
 
-
 // =====================================================
 // SECTION TITLE
 // =====================================================
 
-class _SectionTitle extends StatelessWidget {
+class _SectionTitle
+    extends StatelessWidget {
   final IconData icon;
   final String title;
 
@@ -456,20 +658,26 @@ class _SectionTitle extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+  ) {
     return Row(
       children: [
 
         Container(
           width: 42,
           height: 42,
-          decoration: const BoxDecoration(
-            color: AppTheme.lightGreen,
-            shape: BoxShape.circle,
+          decoration:
+              const BoxDecoration(
+            color:
+                AppTheme.lightGreen,
+            shape:
+                BoxShape.circle,
           ),
           child: Icon(
             icon,
-            color: AppTheme.primary,
+            color:
+                AppTheme.primary,
             size: 22,
           ),
         ),
@@ -478,10 +686,13 @@ class _SectionTitle extends StatelessWidget {
 
         Text(
           title,
-          style: const TextStyle(
+          style:
+              const TextStyle(
             fontSize: 23,
-            fontWeight: FontWeight.bold,
-            color: AppTheme.primary,
+            fontWeight:
+                FontWeight.bold,
+            color:
+                AppTheme.primary,
           ),
         ),
       ],
@@ -489,12 +700,12 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-
 // =====================================================
 // CONTENT CARD
 // =====================================================
 
-class _ContentCard extends StatelessWidget {
+class _ContentCard
+    extends StatelessWidget {
   final Widget child;
 
   const _ContentCard({
@@ -502,21 +713,29 @@ class _ContentCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+  ) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(25),
-      decoration: BoxDecoration(
+      padding:
+          const EdgeInsets.all(25),
+      decoration:
+          BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius:
+            BorderRadius.circular(18),
         border: Border.all(
-          color: Colors.grey.shade200,
+          color:
+              Colors.grey.shade200,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black
+                .withOpacity(0.04),
             blurRadius: 15,
-            offset: const Offset(0, 5),
+            offset:
+                const Offset(0, 5),
           ),
         ],
       ),

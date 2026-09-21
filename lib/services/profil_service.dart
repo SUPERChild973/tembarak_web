@@ -41,8 +41,8 @@ class ProfilService {
     required String sejarah,
     required String visi,
     required String misi,
-    required String kondisi,
-    required String potensi,
+    required String filosofiLogo,
+    required String logoUrl,
   }) async {
     try {
       await _firestore
@@ -57,10 +57,12 @@ class ProfilService {
           'sejarah': sejarah,
           'visi': visi,
           'misi': misi,
-          'kondisi': kondisi,
-          'potensi': potensi,
-          'updatedAt':
-              FieldValue.serverTimestamp(),
+
+          // DATA LOGO DESA
+          'logoUrl': logoUrl,
+          'filosofiLogo': filosofiLogo,
+
+          'updatedAt': FieldValue.serverTimestamp(),
         },
         SetOptions(merge: true),
       );
