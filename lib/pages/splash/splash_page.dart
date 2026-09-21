@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../../config/app_theme.dart';
@@ -16,15 +17,16 @@ class _SplashPageState extends State<SplashPage>
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
 
+  String _logoUrl = '';
+  String _namaDesa = 'DESA TEMBARAK';
+
   @override
   void initState() {
     super.initState();
 
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(
-        milliseconds: 1500,
-      ),
+      duration: const Duration(milliseconds: 1500),
     );
 
     _fadeAnimation = CurvedAnimation(
@@ -44,13 +46,55 @@ class _SplashPageState extends State<SplashPage>
 
     _controller.forward();
 
-    // Splash hanya menunggu 3 detik.
-    // Tidak menunggu Firestore agar tidak loading terus.
+    _loadPengaturan();
+
     Future.delayed(
       const Duration(seconds: 3),
       _goToHome,
     );
   }
+
+  // ============================================================
+  // AMBIL LOGO DAN NAMA DESA DARI FIRESTORE
+  // ============================================================
+
+  Future<void> _loadPengaturan() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('pengaturan')
+          .doc('website')
+          .get();
+
+      if (!snapshot.exists) {
+        return;
+      }
+
+      final data = snapshot.data();
+
+      if (data == null || !mounted) {
+        return;
+      }
+
+      setState(() {
+        _logoUrl = data['logoUrl']?.toString() ?? '';
+
+        final namaDesa =
+            data['namaDesa']?.toString().trim() ?? '';
+
+        if (namaDesa.isNotEmpty) {
+          _namaDesa = namaDesa.toUpperCase();
+        }
+      });
+    } catch (e) {
+      debugPrint(
+        'Gagal mengambil pengaturan Splash: $e',
+      );
+    }
+  }
+
+  // ============================================================
+  // PINDAH KE HOME
+  // ============================================================
 
   Future<void> _goToHome() async {
     if (!mounted) return;
@@ -67,6 +111,82 @@ class _SplashPageState extends State<SplashPage>
     _controller.dispose();
     super.dispose();
   }
+
+  // ============================================================
+  // LOGO
+  // ============================================================
+
+  Widget _buildLogo() {
+    return Container(
+      width: 150,
+      height: 150,
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.20),
+            blurRadius: 25,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: _logoUrl.isNotEmpty
+          ? ClipOval(
+              child: Image.network(
+                _logoUrl,
+
+                fit: BoxFit.contain,
+
+                // Supaya browser tidak terus menggunakan
+                // gambar lama setelah logo diganti.
+                key: ValueKey(_logoUrl),
+
+                loadingBuilder: (
+                  context,
+                  child,
+                  loadingProgress,
+                ) {
+                  if (loadingProgress == null) {
+                    return child;
+                  }
+
+                  return const Center(
+                    child: SizedBox(
+                      width: 30,
+                      height: 30,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                      ),
+                    ),
+                  );
+                },
+
+                errorBuilder: (
+                  context,
+                  error,
+                  stackTrace,
+                ) {
+                  return const Icon(
+                    Icons.account_balance,
+                    size: 70,
+                    color: AppTheme.primary,
+                  );
+                },
+              ),
+            )
+          : const Icon(
+              Icons.account_balance,
+              size: 70,
+              color: AppTheme.primary,
+            ),
+    );
+  }
+
+  // ============================================================
+  // BUILD
+  // ============================================================
 
   @override
   Widget build(BuildContext context) {
@@ -90,17 +210,26 @@ class _SplashPageState extends State<SplashPage>
             opacity: _fadeAnimation,
             child: ScaleTransition(
               scale: _scaleAnimation,
-              child: const Column(
+              child: Column(
                 mainAxisAlignment:
                     MainAxisAlignment.center,
                 children: [
-                  _LogoPlaceholder(),
+                  // =================================================
+                  // LOGO DARI FIRESTORE
+                  // =================================================
 
-                  SizedBox(height: 28),
+                  _buildLogo(),
+
+                  const SizedBox(height: 28),
+
+                  // =================================================
+                  // NAMA DESA
+                  // =================================================
 
                   Text(
-                    'DESA TEMBARAK',
-                    style: TextStyle(
+                    _namaDesa,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 30,
                       fontWeight: FontWeight.bold,
@@ -108,10 +237,11 @@ class _SplashPageState extends State<SplashPage>
                     ),
                   ),
 
-                  SizedBox(height: 10),
+                  const SizedBox(height: 10),
 
-                  Text(
+                  const Text(
                     'Bersama Membangun Desa',
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.white70,
                       fontSize: 15,
@@ -119,9 +249,13 @@ class _SplashPageState extends State<SplashPage>
                     ),
                   ),
 
-                  SizedBox(height: 35),
+                  const SizedBox(height: 35),
 
-                  SizedBox(
+                  // =================================================
+                  // LOADING
+                  // =================================================
+
+                  const SizedBox(
                     width: 24,
                     height: 24,
                     child: CircularProgressIndicator(
@@ -137,34 +271,6 @@ class _SplashPageState extends State<SplashPage>
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _LogoPlaceholder extends StatelessWidget {
-  const _LogoPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 125,
-      height: 125,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 25,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: const Icon(
-        Icons.account_balance,
-        size: 65,
-        color: AppTheme.primary,
       ),
     );
   }
