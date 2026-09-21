@@ -5,11 +5,10 @@ import 'package:http/http.dart' as http;
 
 class StorageService {
   // ============================================================
-  // CLOUDINARY
+  // KONFIGURASI CLOUDINARY
   // ============================================================
 
   static const String cloudName = 'cpze3sx9';
-
   static const String uploadPreset = 'desa_tembarak';
 
   // ============================================================
@@ -19,11 +18,11 @@ class StorageService {
   Future<String> uploadFoto({
     required Uint8List bytes,
     required String fileName,
-    required String folder,
+    String folder = 'desa-tembarak',
     void Function(double progress)? onProgress,
   }) async {
     try {
-      onProgress?.call(0);
+      onProgress?.call(0.1);
 
       final uri = Uri.parse(
         'https://api.cloudinary.com/v1_1/$cloudName/image/upload',
@@ -45,41 +44,37 @@ class StorageService {
         ),
       );
 
-      onProgress?.call(0.1);
+      onProgress?.call(0.4);
 
-      final streamedResponse = await request.send();
+      final response = await request.send();
 
       onProgress?.call(0.8);
 
-      final response = await http.Response.fromStream(
-        streamedResponse,
-      );
+      final responseBody =
+          await response.stream.bytesToString();
 
       if (response.statusCode < 200 ||
           response.statusCode >= 300) {
         throw Exception(
-          'Upload Cloudinary gagal.\n'
-          'Status: ${response.statusCode}\n'
-          '${response.body}',
+          'Upload Cloudinary gagal: '
+          '${response.statusCode} - $responseBody',
         );
       }
 
-      final Map<String, dynamic> data =
-          jsonDecode(response.body);
+      final data = jsonDecode(responseBody);
 
-      final dynamic secureUrl =
-          data['secure_url'];
+      final secureUrl =
+          data['secure_url']?.toString();
 
-      if (secureUrl == null ||
-          secureUrl.toString().trim().isEmpty) {
+      if (secureUrl == null || secureUrl.isEmpty) {
         throw Exception(
-          'Cloudinary tidak mengembalikan URL foto.',
+          'Cloudinary tidak mengembalikan URL gambar.',
         );
       }
 
-      onProgress?.call(1);
+      onProgress?.call(1.0);
 
-      return secureUrl.toString();
+      return secureUrl;
     } catch (e) {
       onProgress?.call(0);
 
@@ -90,52 +85,18 @@ class StorageService {
   }
 
   // ============================================================
-  // UPLOAD LOGO DESA
+  // LOGO DESA
   // ============================================================
 
   Future<String> uploadLogoDesa({
     required Uint8List bytes,
     required String fileName,
     void Function(double progress)? onProgress,
-  }) {
+  }) async {
     return uploadFoto(
       bytes: bytes,
       fileName: fileName,
       folder: 'desa-tembarak/logo',
-      onProgress: onProgress,
-    );
-  }
-
-  // ============================================================
-  // FOTO PERANGKAT DESA
-  // ============================================================
-
-  Future<String> uploadPerangkatFoto({
-    required Uint8List bytes,
-    required String fileName,
-    void Function(double progress)? onProgress,
-  }) {
-    return uploadFoto(
-      bytes: bytes,
-      fileName: fileName,
-      folder: 'desa-tembarak/perangkat',
-      onProgress: onProgress,
-    );
-  }
-
-  // ============================================================
-  // FOTO PRODUK DESA
-  // ============================================================
-
-  Future<String> uploadProdukFoto({
-    required Uint8List bytes,
-    required String fileName,
-    void Function(double progress)? onProgress,
-  }) {
-    return uploadFoto(
-      bytes: bytes,
-      fileName: fileName,
-      folder: 'desa-tembarak/produk',
       onProgress: onProgress,
     );
   }
@@ -148,11 +109,45 @@ class StorageService {
     required Uint8List bytes,
     required String fileName,
     void Function(double progress)? onProgress,
-  }) {
+  }) async {
     return uploadFoto(
       bytes: bytes,
       fileName: fileName,
       folder: 'desa-tembarak/berita',
+      onProgress: onProgress,
+    );
+  }
+
+  // ============================================================
+  // FOTO PRODUK
+  // ============================================================
+
+  Future<String> uploadProdukFoto({
+    required Uint8List bytes,
+    required String fileName,
+    void Function(double progress)? onProgress,
+  }) async {
+    return uploadFoto(
+      bytes: bytes,
+      fileName: fileName,
+      folder: 'desa-tembarak/produk',
+      onProgress: onProgress,
+    );
+  }
+
+  // ============================================================
+  // FOTO PERANGKAT / STRUKTUR
+  // ============================================================
+
+  Future<String> uploadPerangkatFoto({
+    required Uint8List bytes,
+    required String fileName,
+    void Function(double progress)? onProgress,
+  }) async {
+    return uploadFoto(
+      bytes: bytes,
+      fileName: fileName,
+      folder: 'desa-tembarak/struktur',
       onProgress: onProgress,
     );
   }
@@ -165,7 +160,7 @@ class StorageService {
     required Uint8List bytes,
     required String fileName,
     void Function(double progress)? onProgress,
-  }) {
+  }) async {
     return uploadFoto(
       bytes: bytes,
       fileName: fileName,
@@ -175,17 +170,41 @@ class StorageService {
   }
 
   // ============================================================
+  // FOTO KEGIATAN
+  // ============================================================
+
+  Future<String> uploadKegiatanFoto({
+    required Uint8List bytes,
+    required String fileName,
+    void Function(double progress)? onProgress,
+  }) async {
+    return uploadFoto(
+      bytes: bytes,
+      fileName: fileName,
+      folder: 'desa-tembarak/kegiatan',
+      onProgress: onProgress,
+    );
+  }
+
+  // ============================================================
   // HAPUS FOTO
   // ============================================================
 
-  Future<void> hapusFoto(
-    String fotoUrl,
-  ) async {
+  Future<void> hapusFoto(String fotoUrl) async {
     if (fotoUrl.trim().isEmpty) {
       return;
     }
 
-    // Penghapusan Cloudinary membutuhkan API Secret.
-    // Jangan menyimpan API Secret di Flutter Web.
+    /*
+     * Jangan menyimpan Cloudinary API Secret di Flutter Web.
+     *
+     * Penghapusan file fisik Cloudinary sebaiknya dilakukan
+     * melalui backend / Cloud Function.
+     *
+     * Method ini tetap disediakan karena halaman admin lama
+     * memanggil StorageService.hapusFoto().
+     */
+
+    return;
   }
 }

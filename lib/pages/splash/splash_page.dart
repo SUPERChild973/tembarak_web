@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../config/app_theme.dart';
 import '../../main.dart';
 
@@ -21,7 +22,9 @@ class _SplashPageState extends State<SplashPage>
 
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(
+        milliseconds: 1500,
+      ),
     );
 
     _fadeAnimation = CurvedAnimation(
@@ -41,21 +44,23 @@ class _SplashPageState extends State<SplashPage>
 
     _controller.forward();
 
+    // Splash hanya menunggu 3 detik.
+    // Tidak menunggu Firestore agar tidak loading terus.
     Future.delayed(
-      const Duration(milliseconds: 2800),
-      _openHome,
+      const Duration(seconds: 3),
+      _goToHome,
     );
   }
 
-  void _openHome() {
-  if (!mounted) return;
+  Future<void> _goToHome() async {
+    if (!mounted) return;
 
-  Navigator.of(context).pushReplacement(
-    MaterialPageRoute(
-      builder: (_) => const MainPage(),
-    ),
-  );
-}
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => const MainPage(),
+      ),
+    );
+  }
 
   @override
   void dispose() {
@@ -86,7 +91,8 @@ class _SplashPageState extends State<SplashPage>
             child: ScaleTransition(
               scale: _scaleAnimation,
               child: const Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisAlignment:
+                    MainAxisAlignment.center,
                 children: [
                   _LogoPlaceholder(),
 
@@ -120,7 +126,8 @@ class _SplashPageState extends State<SplashPage>
                     height: 24,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(
                         Colors.white,
                       ),
                     ),

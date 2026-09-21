@@ -1,18 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PengaturanService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
-  // ============================================================
-  // COLLECTION & DOCUMENT
-  // ============================================================
+  final FirebaseFirestore _firestore =
+      FirebaseFirestore.instance;
 
   static const String collectionName = 'pengaturan';
   static const String documentName = 'website';
-
-  // ============================================================
-  // REFERENCE
-  // ============================================================
 
   DocumentReference<Map<String, dynamic>> get _websiteRef {
     return _firestore
@@ -45,30 +38,24 @@ class PengaturanService {
   // ============================================================
 
   Future<void> savePengaturan({
-    // ----------------------------------------------------------
-    // INFORMASI DESA
-    // ----------------------------------------------------------
     required String namaDesa,
     required String kecamatan,
     required String kabupaten,
 
-    // ----------------------------------------------------------
-    // VIDEO PROFIL
-    // ----------------------------------------------------------
+    // LOGO
+    required String logoUrl,
+
+    // VIDEO
     required String videoJudul,
     required String videoUrl,
 
-    // ----------------------------------------------------------
-    // STATISTIK DESA
-    // ----------------------------------------------------------
+    // STATISTIK
     required String jumlahPenduduk,
     required String jumlahKeluarga,
     required String jumlahDusun,
     required String jumlahRtRw,
 
-    // ----------------------------------------------------------
-    // INFORMASI KONTAK / FOOTER
-    // ----------------------------------------------------------
+    // FOOTER
     required String footerDeskripsi,
     required String footerAlamat,
     required String footerTelepon,
@@ -77,7 +64,6 @@ class PengaturanService {
     required String footerCopyright,
   }) async {
     try {
-      // Data yang akan disimpan
       final Map<String, dynamic> data = {
         // ======================================================
         // INFORMASI DESA
@@ -88,14 +74,20 @@ class PengaturanService {
         'kabupaten': kabupaten,
 
         // ======================================================
-        // VIDEO PROFIL
+        // LOGO
+        // ======================================================
+
+        'logoUrl': logoUrl,
+
+        // ======================================================
+        // VIDEO
         // ======================================================
 
         'videoJudul': videoJudul,
         'videoUrl': videoUrl,
 
         // ======================================================
-        // STATISTIK DESA
+        // STATISTIK
         // ======================================================
 
         'jumlahPenduduk': jumlahPenduduk,
@@ -104,32 +96,22 @@ class PengaturanService {
         'jumlahRtRw': jumlahRtRw,
 
         // ======================================================
-        // FOOTER / KONTAK
+        // FOOTER
         // ======================================================
 
         'footerDeskripsi': footerDeskripsi,
         'footerAlamat': footerAlamat,
         'footerTelepon': footerTelepon,
         'footerEmail': footerEmail,
-
-        // JAM OPERASIONAL
         'footerJamOperasional': footerJamOperasional,
-
-        // COPYRIGHT
         'footerCopyright': footerCopyright,
 
         // ======================================================
-        // WAKTU UPDATE
+        // UPDATE
         // ======================================================
 
         'updatedAt': FieldValue.serverTimestamp(),
       };
-
-      // ========================================================
-      // SIMPAN KE:
-      // pengaturan
-      //    └── website
-      // ========================================================
 
       await _websiteRef.set(
         data,
@@ -165,7 +147,7 @@ class PengaturanService {
   }
 
   // ============================================================
-  // MENGAMBIL SATU FIELD
+  // MENGAMBIL SATU DATA
   // ============================================================
 
   Future<dynamic> getValue(String field) async {
@@ -180,20 +162,6 @@ class PengaturanService {
     } catch (e) {
       throw Exception(
         'Gagal mengambil pengaturan $field: $e',
-      );
-    }
-  }
-
-  // ============================================================
-  // MENGHAPUS PENGATURAN
-  // ============================================================
-
-  Future<void> deletePengaturan() async {
-    try {
-      await _websiteRef.delete();
-    } catch (e) {
-      throw Exception(
-        'Gagal menghapus pengaturan: $e',
       );
     }
   }

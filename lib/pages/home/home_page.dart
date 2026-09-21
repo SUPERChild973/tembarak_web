@@ -212,10 +212,13 @@ class _HomePageState extends State<HomePage> {
           'sejahtera, dan berdaya saing.',
     );
 
+    // Logo utama sekarang diatur dari Admin > Pengaturan.
+    // homeLogoUrl tetap dipakai sebagai fallback agar data lama
+    // yang sudah tersimpan tidak hilang.
     final logoUrl = _stringSetting(
       data,
-      'homeLogoUrl',
-      '',
+      'logoUrl',
+      _stringSetting(data, 'homeLogoUrl', ''),
     );
 
     if (slides.isEmpty) {

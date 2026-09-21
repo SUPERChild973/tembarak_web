@@ -1,4 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+
 import '../config/app_theme.dart';
 
 class Navbar extends StatelessWidget {
@@ -11,7 +13,8 @@ class Navbar extends StatelessWidget {
     required this.onNavigate,
   });
 
-  static const List<Map<String, String>> menus = [
+  static const List<Map<String, String>>
+      menus = [
     {
       'title': 'Beranda',
       'page': 'home',
@@ -47,27 +50,48 @@ class Navbar extends StatelessWidget {
   ];
 
   @override
-  Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    final isMobile = width < 900;
+  Widget build(
+    BuildContext context,
+  ) {
+    final width =
+        MediaQuery.of(context).size.width;
+
+    final isMobile =
+        width < 900;
 
     return Container(
       height: 76,
-      padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? 20 : 60,
+
+      padding:
+          EdgeInsets.symmetric(
+        horizontal:
+            isMobile ? 20 : 60,
       ),
-      decoration: BoxDecoration(
+
+      decoration:
+          BoxDecoration(
         color: Colors.white,
+
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color:
+                Colors.black.withOpacity(
+              0.06,
+            ),
             blurRadius: 12,
-            offset: const Offset(0, 3),
+            offset:
+                const Offset(0, 3),
           ),
         ],
       ),
+
       child: Row(
         children: [
+
+          // ====================================================
+          // LOGO
+          // ====================================================
+
           _logo(),
 
           const Spacer(),
@@ -81,118 +105,230 @@ class Navbar extends StatelessWidget {
     );
   }
 
-  // =========================
+  // ============================================================
   // LOGO
-  // =========================
+  // ============================================================
 
   Widget _logo() {
-    return GestureDetector(
-      onTap: () {
-        onNavigate('home ');
-      },
-      child: Row(
-        children: [
-          Container(
-            width: 45,
-            height: 45,
-            decoration: const BoxDecoration(
-              color: AppTheme.lightGreen,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.account_balance,
-              color: AppTheme.primary,
-            ),
-          ),
+    return StreamBuilder<
+        DocumentSnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore
+          .instance
+          .collection('pengaturan')
+          .doc('website')
+          .snapshots(),
 
-          const SizedBox(width: 12),
+      builder:
+          (context, snapshot) {
 
-          const Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
+        final data =
+            snapshot.data?.data() ??
+                {};
+
+        final String logoUrl =
+            data['logoUrl']
+                    ?.toString()
+                    .trim() ??
+                '';
+
+        final String namaDesa =
+            data['namaDesa']
+                    ?.toString()
+                    .trim() ??
+                'DESA TEMBARAK';
+
+        return GestureDetector(
+          onTap: () {
+            onNavigate('home');
+          },
+
+          child: Row(
             children: [
-              Text(
-                'DESA TEMBARAK',
-                style: TextStyle(
-                  color: AppTheme.primary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
+
+              Container(
+                width: 45,
+                height: 45,
+
+                padding:
+                    const EdgeInsets.all(5),
+
+                decoration:
+                    const BoxDecoration(
+                  color:
+                      AppTheme.lightGreen,
+                  shape:
+                      BoxShape.circle,
                 ),
+
+                child: logoUrl.isEmpty
+                    ? const Icon(
+                        Icons.account_balance,
+                        color:
+                            AppTheme.primary,
+                      )
+                    : ClipOval(
+                        child:
+                            Image.network(
+                          logoUrl,
+                          fit:
+                              BoxFit.contain,
+
+                          errorBuilder:
+                              (
+                            context,
+                            error,
+                            stackTrace,
+                          ) {
+                            return const Icon(
+                              Icons.account_balance,
+                              color:
+                                  AppTheme.primary,
+                            );
+                          },
+                        ),
+                      ),
               ),
-              Text(
-                'Website Resmi Desa',
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 11,
-                ),
+
+              const SizedBox(
+                width: 12,
+              ),
+
+              Column(
+                mainAxisAlignment:
+                    MainAxisAlignment.center,
+
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
+
+                children: [
+
+                  Text(
+                    namaDesa
+                        .toUpperCase(),
+
+                    style:
+                        const TextStyle(
+                      color:
+                          AppTheme.primary,
+                      fontWeight:
+                          FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+
+                  const Text(
+                    'Website Resmi Desa',
+
+                    style:
+                        TextStyle(
+                      color:
+                          Colors.grey,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  // =========================
-  // DESKTOP MENU
-  // =========================
+  // ============================================================
+  // DESKTOP
+  // ============================================================
 
-  Widget _desktopMenu(BuildContext context) {
+  Widget _desktopMenu(
+    BuildContext context,
+  ) {
     return Row(
       children: [
-        ...menus.map((menu) {
-          final page = menu['page']!;
-          final title = menu['title']!;
 
-          final selected = currentPage == page;
+        ...menus.map(
+          (menu) {
+            final page =
+                menu['page']!;
 
-          return Padding(
-            padding: const EdgeInsets.only(left: 5),
-            child: TextButton(
-              onPressed: () {
-                onNavigate(page);
-              },
-              style: TextButton.styleFrom(
-                foregroundColor: selected
-                    ? AppTheme.primary
-                    : Colors.black87,
+            final title =
+                menu['title']!;
+
+            final selected =
+                currentPage == page;
+
+            return Padding(
+              padding:
+                  const EdgeInsets.only(
+                left: 5,
               ),
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontWeight: selected
-                      ? FontWeight.bold
-                      : FontWeight.normal,
+
+              child:
+                  TextButton(
+                onPressed: () {
+                  onNavigate(page);
+                },
+
+                style:
+                    TextButton.styleFrom(
+                  foregroundColor:
+                      selected
+                          ? AppTheme.primary
+                          : Colors.black87,
+                ),
+
+                child:
+                    Text(
+                  title,
+
+                  style:
+                      TextStyle(
+                    fontWeight:
+                        selected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                  ),
                 ),
               ),
-            ),
-          );
-        }),
+            );
+          },
+        ),
 
-        const SizedBox(width: 15),
-
-        // =========================
-        // LOGIN ADMIN
-        // =========================
+        const SizedBox(
+          width: 15,
+        ),
 
         ElevatedButton.icon(
           onPressed: () {
-            Navigator.of(context).pushNamed('/admin');
+            Navigator.of(context)
+                .pushNamed('/admin');
           },
-          icon: const Icon(
-            Icons.admin_panel_settings_outlined,
+
+          icon:
+              const Icon(
+            Icons
+                .admin_panel_settings_outlined,
             size: 19,
           ),
-          label: const Text(
+
+          label:
+              const Text(
             'Login Admin',
           ),
-          style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(
+
+          style:
+              ElevatedButton.styleFrom(
+            padding:
+                const EdgeInsets.symmetric(
               horizontal: 18,
               vertical: 12,
             ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(25),
+
+            shape:
+                RoundedRectangleBorder(
+              borderRadius:
+                  BorderRadius.circular(
+                25,
+              ),
             ),
           ),
         ),
@@ -200,49 +336,77 @@ class Navbar extends StatelessWidget {
     );
   }
 
-  // =========================
-  // MOBILE MENU
-  // =========================
+  // ============================================================
+  // MOBILE
+  // ============================================================
 
-  Widget _mobileMenu(BuildContext context) {
+  Widget _mobileMenu(
+    BuildContext context,
+  ) {
     return PopupMenuButton<String>(
-      icon: const Icon(
+      icon:
+          const Icon(
         Icons.menu,
-        color: AppTheme.primary,
+        color:
+            AppTheme.primary,
       ),
+
       onSelected: (value) {
+
         if (value == 'admin') {
-          Navigator.of(context).pushNamed('/admin');
+          Navigator.of(context)
+              .pushNamed('/admin');
         } else {
           onNavigate(value);
         }
       },
-      itemBuilder: (context) {
+
+      itemBuilder:
+          (context) {
+
         return [
-          ...menus.map((menu) {
-            return PopupMenuItem<String>(
-              value: menu['page'],
-              child: Text(
-                menu['title']!,
-              ),
-            );
-          }),
+
+          ...menus.map(
+            (menu) {
+              return PopupMenuItem<String>(
+                value:
+                    menu['page'],
+
+                child:
+                    Text(
+                  menu['title']!,
+                ),
+              );
+            },
+          ),
 
           const PopupMenuDivider(),
 
           const PopupMenuItem<String>(
             value: 'admin',
-            child: Row(
+
+            child:
+                Row(
               children: [
+
                 Icon(
-                  Icons.admin_panel_settings_outlined,
-                  color: AppTheme.primary,
+                  Icons
+                      .admin_panel_settings_outlined,
+                  color:
+                      AppTheme.primary,
                 ),
-                SizedBox(width: 10),
+
+                SizedBox(
+                  width: 10,
+                ),
+
                 Text(
                   'Login Admin',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
+
+                  style:
+                      TextStyle(
+                    fontWeight:
+                        FontWeight.bold,
                   ),
                 ),
               ],
@@ -252,4 +416,4 @@ class Navbar extends StatelessWidget {
       },
     );
   }
-}
+} 

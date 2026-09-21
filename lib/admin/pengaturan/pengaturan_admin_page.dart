@@ -1,6 +1,10 @@
+import 'dart:typed_data';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../../config/app_theme.dart';
 import '../../services/pengaturan_service.dart';
+import '../../services/storage_service.dart';
 
 class PengaturanAdminPage extends StatefulWidget {
   const PengaturanAdminPage({super.key});
@@ -19,6 +23,9 @@ class _PengaturanAdminPageState
 
   bool _isLoading = true;
   bool _isSaving = false;
+  bool _isUploadingLogo = false;
+
+  String _logoUrl = '';
 
   // ============================================================
   // INFORMASI DESA
@@ -129,6 +136,8 @@ class _PengaturanAdminPageState
           await _pengaturanService.getPengaturan();
 
       if (data != null) {
+        _logoUrl = data['logoUrl']?.toString() ?? '';
+
         // ======================================================
         // INFORMASI DESA
         // ======================================================
@@ -211,6 +220,201 @@ class _PengaturanAdminPageState
   }
 
   // ============================================================
+  // UPLOAD LOGO DESA
+  // ============================================================
+
+  Future<void> _pilihDanUploadLogo() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const ['png', 'jpg', 'jpeg', 'webp'],
+        withData: true,
+      );
+
+      if (result == null || result.files.isEmpty) return;
+
+      final file = result.files.first;
+      final Uint8List? bytes = file.bytes;
+
+      if (bytes == null || bytes.isEmpty) {
+        throw Exception('File logo tidak dapat dibaca.');
+      }
+
+      setState(() => _isUploadingLogo = true);
+
+      final url = await StorageService().uploadLogoDesa(
+        bytes: bytes,
+        fileName: file.name,
+      );
+
+      await _pengaturanService.updatePengaturan({
+        'logoUrl': url,
+      });
+
+      if (!mounted) return;
+
+      setState(() {
+        _logoUrl = url;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Logo berhasil diupload dan disimpan.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal mengupload logo: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isUploadingLogo = false);
+      }
+    }
+  }
+
+  // ============================================================
+  // HAPUS LOGO DARI PENGATURAN
+  // ============================================================
+
+  Future<void> _hapusLogo() async {
+    try {
+      await _pengaturanService.updatePengaturan({
+        'logoUrl': '',
+      });
+
+      if (!mounted) return;
+
+      setState(() => _logoUrl = '');
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Logo berhasil dihapus dari pengaturan.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal menghapus logo: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // ============================================================
+  // WIDGET LOGO
+  // ============================================================
+
+  Widget _logoSection() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 160,
+            height: 160,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppTheme.background,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: _logoUrl.isEmpty
+                ? const Icon(
+                    Icons.account_balance,
+                    size: 75,
+                    color: AppTheme.primary,
+                  )
+                : ClipOval(
+                    child: Image.network(
+                      _logoUrl,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Icon(
+                          Icons.broken_image_outlined,
+                          size: 65,
+                          color: Colors.grey,
+                        );
+                      },
+                    ),
+                  ),
+          ),
+          const SizedBox(height: 18),
+          const Text(
+            'Logo Desa',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.primary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Logo ini digunakan pada Splash Screen, Navbar, dan halaman Home.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.black54,
+              fontSize: 13,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 18),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            alignment: WrapAlignment.center,
+            children: [
+              ElevatedButton.icon(
+                onPressed: _isUploadingLogo ? null : _pilihDanUploadLogo,
+                icon: _isUploadingLogo
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.upload_outlined),
+                label: Text(
+                  _isUploadingLogo ? 'Mengupload...' : 'Pilih & Upload Logo',
+                ),
+              ),
+              if (_logoUrl.isNotEmpty)
+                OutlinedButton.icon(
+                  onPressed: _isUploadingLogo ? null : _hapusLogo,
+                  icon: const Icon(Icons.delete_outline, color: Colors.red),
+                  label: const Text(
+                    'Hapus Logo',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'Format: PNG, JPG, JPEG, atau WEBP',
+            style: TextStyle(color: Colors.black45, fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
   // SIMPAN PENGATURAN
   // ============================================================
 
@@ -237,6 +441,8 @@ class _PengaturanAdminPageState
 
         kabupaten:
             _kabupatenController.text.trim(),
+
+        logoUrl: _logoUrl,
 
         // ======================================================
         // STATISTIK DESA
@@ -376,6 +582,21 @@ class _PengaturanAdminPageState
                         ),
 
                         const SizedBox(height: 30),
+
+                        // ==================================================
+                        // LOGO DESA
+                        // ==================================================
+
+                        _sectionTitle(
+                          'Logo Website',
+                          Icons.image_outlined,
+                        ),
+
+                        const SizedBox(height: 18),
+
+                        _logoSection(),
+
+                        const SizedBox(height: 35),
 
                         // ==================================================
                         // INFORMASI DESA
