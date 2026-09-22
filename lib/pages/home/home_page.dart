@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'dart:html' as html;
 import 'dart:ui_web' as ui_web;
 
+import 'package:web/web.dart' as web;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
@@ -82,10 +82,6 @@ class _HomePageState extends State<HomePage> {
 
   Stream<DocumentSnapshot<Map<String, dynamic>>>
       _getHomeSettings() {
-    // PENTING:
-    // PengaturanService menyimpan data pada:
-    // pengaturan/website
-
     return _firestore
         .collection('pengaturan')
         .doc('website')
@@ -156,28 +152,13 @@ class _HomePageState extends State<HomePage> {
         return SingleChildScrollView(
           child: Column(
             children: [
-              // HERO / SLIDE
               _heroSection(context, data),
-
-              // MENU CEPAT
               _quickMenu(context),
-
-              // VIDEO PROFIL
               _welcomeSection(context, data),
-
-              // DATA SINGKAT
               _statisticsSection(context, data),
-
-              // PRODUK
               _productsSection(context),
-
-              // BERITA
               _newsSection(context),
-
-              // GALERI
               _activitySection(context),
-
-              // KONTAK
               _contactSection(context, data),
             ],
           ),
@@ -212,9 +193,6 @@ class _HomePageState extends State<HomePage> {
           'sejahtera, dan berdaya saing.',
     );
 
-    // Logo utama sekarang diatur dari Admin > Pengaturan.
-    // homeLogoUrl tetap dipakai sebagai fallback agar data lama
-    // yang sudah tersimpan tidak hilang.
     final logoUrl = _stringSetting(
       data,
       'logoUrl',
@@ -462,9 +440,7 @@ class _HomePageState extends State<HomePage> {
   // QUICK MENU
   // ============================================================
 
-  Widget _quickMenu(
-    BuildContext context,
-  ) {
+  Widget _quickMenu(BuildContext context) {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.symmetric(
@@ -812,18 +788,6 @@ class _HomePageState extends State<HomePage> {
     BuildContext context,
     Map<String, dynamic> data,
   ) {
-    // ==========================================================
-    // PENTING
-    //
-    // Nama field HARUS sama dengan PengaturanService:
-    //
-    // jumlahPenduduk
-    // jumlahKeluarga
-    // jumlahDusun
-    // jumlahRtRw
-    //
-    // ==========================================================
-
     final penduduk = _stringSetting(
       data,
       'jumlahPenduduk',
@@ -895,19 +859,16 @@ class _HomePageState extends State<HomePage> {
                     'Penduduk',
                     penduduk,
                   ),
-
                   _statCard(
                     Icons.home_work,
                     'Kepala Keluarga',
                     kepalaKeluarga,
                   ),
-
                   _statCard(
                     Icons.location_city,
                     'Dusun',
                     dusun,
                   ),
-
                   _statCard(
                     Icons.groups,
                     'RT / RW',
@@ -1142,8 +1103,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
 
-                if (produk.pemilik
-                    .isNotEmpty) ...[
+                if (produk.pemilik.isNotEmpty) ...[
                   const SizedBox(height: 7),
 
                   Text(
@@ -1159,8 +1119,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ],
 
-                if (produk.deskripsi
-                    .isNotEmpty) ...[
+                if (produk.deskripsi.isNotEmpty) ...[
                   const SizedBox(height: 8),
 
                   Text(
@@ -1327,10 +1286,6 @@ class _HomePageState extends State<HomePage> {
         crossAxisAlignment:
             CrossAxisAlignment.start,
         children: [
-          // ======================================================
-          // GAMBAR BERITA
-          // ======================================================
-
           Container(
             width: double.infinity,
             height: 180,
@@ -1413,16 +1368,6 @@ class _HomePageState extends State<HomePage> {
   Widget _beritaImage(
     Berita berita,
   ) {
-    /*
-      Kode ini mencoba mengambil fotoUrl dari model Berita.
-
-      Jika fotoUrl tersedia:
-      -> tampilkan gambar berita.
-
-      Jika kosong:
-      -> tampilkan placeholder.
-    */
-
     final fotoUrl = berita.fotoUrl.trim();
 
     if (fotoUrl.isEmpty) {
@@ -1909,16 +1854,13 @@ class _GoogleDriveVideoState
     ui_web.platformViewRegistry.registerViewFactory(
       _viewType,
       (int viewId) {
-        final iframe = html.IFrameElement()
+        final iframe = web.HTMLIFrameElement()
           ..src = widget.url
           ..style.border = '0'
           ..style.width = '100%'
           ..style.height = '100%'
           ..style.display = 'block'
-          ..setAttribute(
-            'allowfullscreen',
-            'true',
-          )
+          ..allowFullscreen = true
           ..setAttribute(
             'allow',
             'autoplay; fullscreen; encrypted-media; picture-in-picture',

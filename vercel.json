@@ -1,10 +1,6 @@
 {
-  "buildCommand": "flutter build web --release",
-  "outputDirectory": "build/web",
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
-  ]
+  "version": 2,
+  "installCommand": "git clone --depth 1 -b stable https://github.com/flutter/flutter.git $HOME/flutter",
+  "buildCommand": "$HOME/flutter/bin/flutter pub get && $HOME/flutter/bin/flutter build web --release",
+  "outputDirectory": "build/web"
 }
